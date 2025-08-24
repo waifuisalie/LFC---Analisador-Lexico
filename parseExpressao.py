@@ -7,7 +7,7 @@ class Tipo_de_Token():
     # Operadores
     SOMA = "SOMA"
     SUBTRACAO = "SUBTRACAO"
-    MULTIPLICACAO = "MULT"  # "MULT" é mais comum
+    MULTIPLICACAO = "MULT"  
     DIVISAO = "DIV"
     RESTO = "RESTO"
     POTENCIA = "POT"
@@ -15,7 +15,6 @@ class Tipo_de_Token():
     # Símbolos de Agrupamento
     ABRE_PARENTESES = "ABRE_PARENTESES"
     FECHA_PARENTESES = "FECHA_PARENTESES"
-    ESPACO = "ESPACO"
 
     # Comandos Especiais
     RES = "RES"
@@ -52,6 +51,10 @@ class Analisador_Lexico:
         else:
             self.caractere = None
 
+    def ignora_espaco(self):
+        while self.caractere is not None and self.caractere.isspace():
+            self.avanca_ponteiro()
+
     def analise(self):
         tokens = []
         while self.caractere is not None:
@@ -65,9 +68,46 @@ class Analisador_Lexico:
 
     def estado_zero(self):
 
+        self.ignora_espaco()
+
+        #Verifica se chegou ao fim do arquivo
+        if self.caractere is None:
+            return None
+        
+        # Verifica se é um comando especial (alfabetico)
+        if self.caractere.isalpha():
+            return self.estado_comando()
+        
+        # Verifica se é um número
         if self.caractere.isdigit():
             return self.estado_numero()
+        
+        # Verifica qual é o caractere especial 
+        if self.caractere_atual == '(':
+            token = Token(Tipo_de_Token.ABRE_PARENTESES, '(')
+        elif self.caractere_atual == ')':
+            token = Token(Tipo_de_Token.FECHA_PARENTESES, ')')
+        elif self.caractere_atual == '+':
+            token = Token(Tipo_de_Token.SOMA, '+')
+        elif self.caractere_atual == '-':
+            token = Token(Tipo_de_Token.SUBTRACAO, '-')
+        elif self.caractere_atual == '*':
+            token = Token(Tipo_de_Token.MULTIPLICACAO, '*')
+        elif self.caractere_atual == '/':
+            token = Token(Tipo_de_Token.DIVISAO, '/')
+        elif self.caractere_atual == '%':
+            token = Token(Tipo_de_Token.RESTO, '%')
+        elif self.caractere_atual == '^':
+            token = Token(Tipo_de_Token.POTENCIA, '^')
 
+        # Ao final retorna o token criado e avança o ponteiro
+        if token:
+            self.avancar()
+            return token
+        
+        # Caractere inválido
+        raise ValueError(f"Caractere inválido: '{self.caractere_atual}'")
+    
     def estado_numero(self):
         # Lê a parte inteira do número
         while self.caractere is not None and self.caractere.isdigit():
@@ -100,4 +140,5 @@ class Analisador_Lexico:
             return Token(Tipo_de_Token.MEM, resultado) 
         else:
             return Token(Tipo_de_Token.RES, resultado)
+        
     
