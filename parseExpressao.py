@@ -1,4 +1,4 @@
-# Classes
+# Classes para a geracao de tokens
 class Tipo_de_Token():
     # Números
     NUMERO_REAL = "NUMERO_REAL"
@@ -36,7 +36,8 @@ class Token:
     
     def __repr__(self):
         return f"Token({self.tipo}, {self.valor})"
-    
+
+# Classe do Analisador Léxico
 class Analisador_Lexico:
     def __init__(self, texto_fonte: str):
         self.texto_fonte = texto_fonte
@@ -150,6 +151,9 @@ def parseExpressao(linha: str):
     analisador_lexico = Analisador_Lexico(linha)
     return analisador_lexico.analise()
 
+# Testes unitários da funcao parseExpressao()
+# Adicionar etapa ler para ler arquivos!
+"""
 if __name__ == "__main__":
     expressoes_teste = [
         "(3.0 2.0 +)",
@@ -177,5 +181,6 @@ if __name__ == "__main__":
         print(f"Teste de erro (esperado):")
         print(f"Expressão: '{expressao_invalida}'")
         print(f"Erro: {e}\n")
-        
-    
+"""
+
+# Obtendo o vetor de tokens, podemos partir para a etapa de calculo
