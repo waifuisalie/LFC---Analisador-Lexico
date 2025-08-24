@@ -1,4 +1,3 @@
-
 # Classes
 class Tipo_de_Token():
     # Números
@@ -43,6 +42,7 @@ class Analisador_Lexico:
         self.texto_fonte = texto_fonte
         self.ponteiro = 0
         self.caractere = self.texto_fonte[self.ponteiro] if self.texto_fonte else None
+        self.resultado = ""
 
     def avanca_ponteiro(self):
         self.ponteiro += 1
@@ -63,7 +63,8 @@ class Analisador_Lexico:
                 tokens.append(token)
 
         tokens.append(Token(Tipo_de_Token.FIM, None)) # Adiciona o marcador de fim
-    
+        return tokens
+        
     # Estados da nossa Maquina de Estados Finitos (FSM)
 
     def estado_zero(self):
@@ -83,36 +84,40 @@ class Analisador_Lexico:
             return self.estado_numero()
         
         # Verifica qual é o caractere especial 
-        if self.caractere_atual == '(':
+        token = None
+        if self.caractere == '(':
             token = Token(Tipo_de_Token.ABRE_PARENTESES, '(')
-        elif self.caractere_atual == ')':
+        elif self.caractere == ')':
             token = Token(Tipo_de_Token.FECHA_PARENTESES, ')')
-        elif self.caractere_atual == '+':
+        elif self.caractere == '+':
             token = Token(Tipo_de_Token.SOMA, '+')
-        elif self.caractere_atual == '-':
+        elif self.caractere == '-':
             token = Token(Tipo_de_Token.SUBTRACAO, '-')
-        elif self.caractere_atual == '*':
+        elif self.caractere == '*':
             token = Token(Tipo_de_Token.MULTIPLICACAO, '*')
-        elif self.caractere_atual == '/':
+        elif self.caractere == '/':
             token = Token(Tipo_de_Token.DIVISAO, '/')
-        elif self.caractere_atual == '%':
+        elif self.caractere == '%':
             token = Token(Tipo_de_Token.RESTO, '%')
-        elif self.caractere_atual == '^':
+        elif self.caractere == '^':
             token = Token(Tipo_de_Token.POTENCIA, '^')
 
         # Ao final retorna o token criado e avança o ponteiro
         if token:
-            self.avancar()
+            self.avanca_ponteiro()
             return token
         
         # Caractere inválido
-        raise ValueError(f"Caractere inválido: '{self.caractere_atual}'")
+        raise ValueError(f"Caractere inválido: '{self.caractere}'")
     
     def estado_numero(self):
+        resultado = ""
+
         # Lê a parte inteira do número
         while self.caractere is not None and self.caractere.isdigit():
             resultado += self.caractere
             self.avanca_ponteiro()
+
         # Inicia a leiturta da parte decimal
         if self.caractere == '.':
             resultado += self.caractere
@@ -136,9 +141,41 @@ class Analisador_Lexico:
             self.avanca_ponteiro()
 
         # Checa qual dos dois comandos (MEM ou RES) foi inserido
-        if resultado == "MEM":
+        if self.resultado == "MEM":
             return Token(Tipo_de_Token.MEM, resultado) 
         else:
             return Token(Tipo_de_Token.RES, resultado)
+        
+def parseExpressao(linha: str):
+    analisador_lexico = Analisador_Lexico(linha)
+    return analisador_lexico.analise()
+
+if __name__ == "__main__":
+    expressoes_teste = [
+        "(3.0 2.0 +)",
+        "(10.0 4.0 -)",
+        "((1.0 2.0 +) (3.0 4.0 *) /)",
+        "(5.0 MEM)",
+        "(MEM)",
+        "(1 RES)",
+        "(2 3 ^)" # Teste com inteiro
+    ]
+
+    for expr in expressoes_teste:
+        try:
+            tokens_gerados = parseExpressao(expr)
+            print(f"Expressão: '{expr}'")
+            print(f"Tokens: {tokens_gerados}\n")
+        except ValueError as e:
+            print(f"Erro ao analisar '{expr}': {e}\n")
+
+    # Teste de erro
+    expressao_invalida = "(3.14.5 & 2.0)"
+    try:
+        parseExpressao(expressao_invalida)
+    except ValueError as e:
+        print(f"Teste de erro (esperado):")
+        print(f"Expressão: '{expressao_invalida}'")
+        print(f"Erro: {e}\n")
         
     
