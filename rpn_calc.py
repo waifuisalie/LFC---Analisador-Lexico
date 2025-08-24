@@ -1,4 +1,5 @@
 import math
+import sys
 
 def executarExpressao(tokens: list, memoria: dict, historico_resultados: list) -> float:
     pilha = []
@@ -196,5 +197,27 @@ def rodar_testes():
     
     print("\n--- FIM DOS TESTES ---")
 
+def lerArquivos(nomeArquivo: str): 
+    try:
+        with open(nomeArquivo,'r', encoding="utf-8") as arquivos_teste:
+            linhas = [linha.strip() for linha in arquivos_teste if linha.strip()]
+        return linhas 
+    except FileNotFoundError:
+        raise FileNotFoundError(f'Arquivo não encontrado')
+        return []
+    return linhas
+
+
 if __name__ == "__main__":
-    rodar_testes()
+
+    if len(sys.argv) < 2:
+           print("Erro: Especificar nome do arquivo de teste")
+           sys.exit(1)
+
+arquivo = sys.argv[1]
+
+# Vetor linhas recebe a lista do arquivo de teste
+# Cada posicao corresponde a uma operação RPN Ex. ['(4.0 2.0 +)',(),]
+vetor_linhas=lerArquivos(arquivo)  
+
+rodar_testes()
