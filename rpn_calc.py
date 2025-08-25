@@ -180,11 +180,11 @@ def lerArquivos(nomeArquivo: str):
         print(f'-> Erro: Arquivo não encontrado: {nomeArquivo}')
         return []
 
-def exibirResultados(vetor_linhas: list): 
-    memoria_global = []
+def exibirResultados(vetor_linhas: list[str]) -> None: 
+    memoria_global = {}
     historico_global =[]
 
-    print("---Executando Arquivo---")
+    print("---Executando Arquivoooo---")
     for i ,linha in enumerate(vetor_linhas, start=1): 
             tokens_simulados = linha.replace('(', '').replace(')', '').strip().split()
 
