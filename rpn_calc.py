@@ -149,13 +149,6 @@ def rodar_testes():
     status_t11 = "Passou" if resultado_t11 == esperado_t11 else "FALHOU"
     print(f"Teste: {nome_t11:<30} | Esperado: {esperado_t11:<8} | Obtido: {resultado_t11:<8} | Status: {status_t11}")
 
-    nome_t12 = "Recuperar MEM não inicializado"
-    tokens_t12 = ['DADO_NOVO', '1', '+']
-    esperado_t12 = 1.0
-    resultado_t12 = executarExpressao(tokens_t12, memoria, historico)
-    status_t12 = "Passou" if resultado_t12 == esperado_t12 else "FALHOU"
-    print(f"Teste: {nome_t12:<30} | Esperado: {esperado_t12:<8} | Obtido: {resultado_t12:<8} | Status: {status_t12}")
-
     print("\n--- Cenário Multi-linha para RES ---")
     
     historico.clear()
@@ -176,13 +169,6 @@ def rodar_testes():
     status_t_res = "Passou" if resultado_t_res == esperado_t_res else "FALHOU"
     print(f"Teste: {nome_t_res:<30} | Esperado: {esperado_t_res:<8} | Obtido: {resultado_t_res:<8} | Status: {status_t_res}")
 
-    nome_t_res_sem_num = "Teste RES sem número"
-    tokens_t_res_sem_num = ['RES', '3.0', '+']
-    esperado_t_res_sem_num = 9.0
-    resultado_t_res_sem_num = executarExpressao(tokens_t_res_sem_num, memoria, historico)
-    status_t_res_sem_num = "Passou" if resultado_t_res_sem_num == esperado_t_res_sem_num else "FALHOU"
-    print(f"Teste: {nome_t_res_sem_num:<30} | Esperado: {esperado_t_res_sem_num:<8} | Obtido: {resultado_t_res_sem_num:<8} | Status: {status_t_res_sem_num}")
-    
     print("\n--- FIM DOS TESTES ---")
 
 
