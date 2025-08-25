@@ -206,19 +206,6 @@ if __name__ == "__main__":
 
     print(f"\nProcessando arquivo: {arquivo}\n")
     exibirResultados(vetor_linhas)
-
-    '''print(f"\nProcessando arquivo: {arquivo}\n")
-    memoria_global = {}
-    historico_global = []
-
-    for linha in vetor_linhas:
-        tokens_simulados = linha.replace('(', '').replace(')', '').strip().split()
-        
-        resultado = executarExpressao(tokens_simulados, memoria_global, historico_global)
-        
-        if resultado is not None:
-            historico_global.append(resultado)
-            print(f"Expressão: '{linha}' | Resultado: {resultado}")'''
             
     print("\n--- EXECUTANDO SUÍTE DE TESTES AUTOMÁTICOS ---")
     rodar_testes()
