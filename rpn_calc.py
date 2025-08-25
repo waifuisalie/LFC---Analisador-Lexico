@@ -171,7 +171,6 @@ def rodar_testes():
 
     print("\n--- FIM DOS TESTES ---")
 
-
 def lerArquivos(nomeArquivo: str): 
     try:
         with open(nomeArquivo, 'r', encoding="utf-8") as arquivos_teste:
@@ -180,6 +179,22 @@ def lerArquivos(nomeArquivo: str):
     except FileNotFoundError:
         print(f'-> Erro: Arquivo não encontrado: {nomeArquivo}')
         return []
+
+def exibirResultados(vetor_linhas: list): 
+    memoria_global = []
+    historico_global =[]
+
+    print("---Executando Arquivo---")
+    for i ,linha in enumerate(vetor_linhas, start=1): 
+            tokens_simulados = linha.replace('(', '').replace(')', '').strip().split()
+
+            resultado = executarExpressao(tokens_simulados, memoria_global, historico_global)
+
+            if resultado is not None:
+                historico_global.append(resultado)
+            
+            print(f"Linha {i:02d}: Expressão '{linha}' -> Resultado: {resultado}")
+    print("\n--- FIM DA EXECUÇÃO ---")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -190,6 +205,9 @@ if __name__ == "__main__":
     vetor_linhas = lerArquivos(arquivo) 
 
     print(f"\nProcessando arquivo: {arquivo}\n")
+    exibirResultados(vetor_linhas)
+
+    '''print(f"\nProcessando arquivo: {arquivo}\n")
     memoria_global = {}
     historico_global = []
 
@@ -200,7 +218,7 @@ if __name__ == "__main__":
         
         if resultado is not None:
             historico_global.append(resultado)
-            print(f"Expressão: '{linha}' | Resultado: {resultado}")
+            print(f"Expressão: '{linha}' | Resultado: {resultado}")'''
             
     print("\n--- EXECUTANDO SUÍTE DE TESTES AUTOMÁTICOS ---")
     rodar_testes()
