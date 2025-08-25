@@ -84,6 +84,10 @@ class Analisador_Lexico:
         if self.caractere.isdigit():
             return self.estado_numero()
         
+        return self.estado_operador()
+
+    def estado_operador(self):
+
         # Verifica qual é o caractere especial 
         token = None
         if self.caractere == '(':
@@ -142,7 +146,7 @@ class Analisador_Lexico:
             self.avanca_ponteiro()
 
         # Checa qual dos dois comandos (MEM ou RES) foi inserido
-        if self.resultado == "MEM":
+        if resultado == "MEM":
             return Token(Tipo_de_Token.MEM, resultado) 
         else:
             return Token(Tipo_de_Token.RES, resultado)
@@ -153,6 +157,7 @@ def parseExpressao(linha: str):
 
 # Testes unitários da funcao parseExpressao()
 # Adicionar etapa ler para ler arquivos!
+
 """
 if __name__ == "__main__":
     expressoes_teste = [
@@ -182,5 +187,4 @@ if __name__ == "__main__":
         print(f"Expressão: '{expressao_invalida}'")
         print(f"Erro: {e}\n")
 """
-
 # Obtendo o vetor de tokens, podemos partir para a etapa de calculo
