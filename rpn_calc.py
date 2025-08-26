@@ -183,18 +183,25 @@ def lerArquivos(nomeArquivo: str):
 def exibirResultados(vetor_linhas: list[str]) -> None: 
     memoria_global = {}
     historico_global =[]
+    tokens_salvo = []
 
-    print("---Executando Arquivoooo---")
     for i ,linha in enumerate(vetor_linhas, start=1): 
-            tokens_simulados = linha.replace('(', '').replace(')', '').strip().split()
-
-            resultado = executarExpressao(tokens_simulados, memoria_global, historico_global)
+            tokens_recebidos = linha.replace('(', '').replace(')', '').strip().split()
+            tokens_salvo.append(tokens_recebidos)
+            resultado = executarExpressao(tokens_recebidos, memoria_global, historico_global)
 
             if resultado is not None:
                 historico_global.append(resultado)
             
             print(f"Linha {i:02d}: Expressão '{linha}' -> Resultado: {resultado}")
-    print("\n--- FIM DA EXECUÇÃO ---")
+
+    try:
+        with open("tokens_gerados.txt","w", encoding='utf-8') as f:
+            for lista_de_tokens in tokens_salvo:
+                linha_formatada = " ".join(lista_de_tokens)
+                f.write(linha_formatada + "\n")
+    except Exception as e:
+        print(f'Erro ao escreve os tokens no arquivo {e}')
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
