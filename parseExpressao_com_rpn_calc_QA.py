@@ -32,7 +32,7 @@ class Token:
         self.valor = valor
     
     def __repr__(self):
-        return f"Token({self._tipo}, {self._valor})"
+        return f"Token({self.tipo}, {self.valor})"
 
 # Classe do Analisador Léxico
 class Analisador_Lexico:
@@ -162,107 +162,87 @@ def arredondar_16bit(valor):
     return round(float(valor), 2)
 
 def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: list) -> float:
-    """Executa uma expressão em notação polonesa reversa (RPN)."""
     pilha = []
 
     for token in tokens:
-        # Garante que token.valor é sempre string para comparação
-        token_val = token.valor
-        token_upper = token_val.upper()
+        if token.tipo == Tipo_de_Token.FIM:
+            continue
 
-        # Verifica se o token é um operador.
-        if token_upper in ['+', '-', '*', '/', '%', '^']:
+        valor_token = str(token.valor).upper()
+
+        # Se for operador
+        if valor_token in ['+', '-', '*', '/', '%', '^']:
             if len(pilha) < 2:
-                print(f"-> Erro: tokens insuficientes para o operador '{token}'")
+                print(f"-> Erro: tokens insuficientes para o operador '{valor_token}'")
                 continue
-            
-            # Desempilha os dois últimos operandos. A ordem é crucial.
+
             v2_str, v1_str = pilha.pop(), pilha.pop()
             resultado = 0.0
-            
+
             try:
-                # Lógica para tratar a divisão inteira vs. real.
-                if token_upper == '/':
-                    v1, v2 = float(v1_str), float(v2_str)
+                v1, v2 = float(v1_str), float(v2_str)
+                if valor_token == '+': resultado = v1 + v2
+                elif valor_token == '-': resultado = v1 - v2
+                elif valor_token == '*': resultado = v1 * v2
+                elif valor_token == '/':
                     if v2 == 0: raise ZeroDivisionError("Divisão por zero.")
-                    if '.' in v1_str or '.' in v2_str:
-                        resultado = v1 / v2
-                    else:
-                        resultado = float(int(v1) // int(v2))
-                # Lógica para as demais operações.
-                else:
-                    v1, v2 = float(v1_str), float(v2_str)
-                    if token_upper == '+': resultado = v1 + v2
-                    elif token_upper == '-': resultado = v1 - v2
-                    elif token_upper == '*': resultado = v1 * v2
-                    elif token_upper == '%': resultado = int(v1) % int(v2)
-                    elif token_upper == '^': resultado = math.pow(v1, v2)
-                
+                    resultado = v1 / v2
+                elif valor_token == '%': resultado = int(v1) % int(v2)
+                elif valor_token == '^': resultado = math.pow(v1, v2)
+
                 pilha.append(str(arredondar_16bit(resultado)))
             except (ZeroDivisionError, ValueError) as e:
-                print(f"-> Erro de operação para '{token}': {e}")
+                print(f"-> Erro de operação para '{valor_token}': {e}")
                 pilha.append('0.0')
 
-        # Lógica para o comando RES.
-        elif token_upper == 'RES':
+        # Comando RES
+        elif token.tipo == Tipo_de_Token.RES:
             if len(pilha) == 0:
                 print("-> Erro: RES requer um índice numérico na pilha.")
                 pilha.append('0.0')
                 continue
-            
+
             n_str = pilha.pop()
-            
             try:
                 n = int(float(n_str))
-                tamanho_historico = len(historico_resultados)
-                if 0 < n <= tamanho_historico:
-                    pilha.append(str(historico_resultados[tamanho_historico - n]))
+                if 0 < n <= len(historico_resultados):
+                    pilha.append(str(historico_resultados[-n]))
                 else:
                     print(f"-> Erro: Índice N={n} inválido para RES.")
                     pilha.append('0.0')
             except ValueError:
-                print(f"-> Erro: O valor '{n_str}' não é um índice numérico válido para RES.")
+                print(f"-> Erro: O valor '{n_str}' não é válido para RES.")
                 pilha.append('0.0')
 
         # Lógica para o comando MEM.
-        elif token_upper == 'MEM':
-            # Trata a sintaxe (V MEM) e (MEM).
+        elif token.tipo == Tipo_de_Token.MEM:
             if len(pilha) > 0 and pilha[-1].replace('.', '', 1).isdigit():
-                # Caso (V MEM): atribui o valor da pilha à memória.
                 valor_para_armazenar_str = pilha.pop()
                 valor_float = float(valor_para_armazenar_str)
                 memoria['MEM'] = valor_float
                 pilha.append(str(arredondar_16bit(valor_float)))
             elif 'MEM' in memoria:
-                # Caso (MEM): recupera o valor da memória.
                 valor = memoria.get('MEM', 0.0)
                 pilha.append(str(arredondar_16bit(valor)))
             else:
-                print("-> Erro: Formato inválido para MEM ou memória não inicializada.")
+                print("-> Erro: MEM não inicializado.")
                 pilha.append('0.0')
 
-        # Processamento de dados (números e nomes de variáveis).
+        # Só converte para número tokens do tipo NUMERO_REAL
+        elif token.tipo == Tipo_de_Token.NUMERO_REAL:
+            pilha.append(str(token.valor))
+
+        # Caso variável desconhecida
         else:
-            try:
-                # Tenta converter o token para um número e empilha.
-                float(token)
-                pilha.append(token)
-            except ValueError:
-                # Se não é um número, é uma variável.
-                if token_upper in memoria:
-                    # Se a variável existe na memória, empilha o valor.
-                    valor = memoria.get(token_upper, 0.0)
-                    pilha.append(str(arredondar_16bit(valor)))
-                else:
-                    # Se não existe, empilha o nome para uso futuro (ex: com MEM).
-                    pilha.append(token)
+            pilha.append(valor_token)
 
     # Retorna o resultado final. A pilha deve conter apenas um item.
     if len(pilha) == 1:
         return arredondar_16bit(pilha[0])
     else:
-        print(f"-> Erro: A expressão finalizou com {len(pilha)} itens na pilha: {pilha}.")
+        print(f"-> Erro: {len(pilha)} itens na pilha: {pilha}")
         return arredondar_16bit(pilha[-1]) if pilha else 0.0
+
 
 if __name__ == "__main__":
     memoria = {}
@@ -285,8 +265,7 @@ if __name__ == "__main__":
     for expr in testes:
         print(f"\nExpressão: {expr}")
         tokens = parseExpressao(expr)
-        valores = [t.valor for t in tokens if t.tipo != Tipo_de_Token.FIM]
-        resultado = executarExpressao(valores, memoria, historico)
+        resultado = executarExpressao(tokens, memoria, historico)
         historico.append(resultado)
         print(f"Resultado = {resultado}")
 
