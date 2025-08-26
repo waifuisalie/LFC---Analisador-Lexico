@@ -242,33 +242,3 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
     else:
         print(f"-> Erro: {len(pilha)} itens na pilha: {pilha}")
         return arredondar_16bit(pilha[-1]) if pilha else 0.0
-
-# Testes
-"""
-if __name__ == "__main__":
-    memoria = {}
-    historico = []
-
-    testes = [
-        "(RES)",                 # 3 + 2 = 5
-        "10 5 /",                # 10 / 5 = 2
-        "3 2 + 10 5 / *",        # (3+2) * (10/5) = 10
-        "12 4 / 3 5 * +",        # 12/4 + (3*5) = 18
-        "9 2 %",                 # 9 % 2 = 1
-        "2 RES",                 # 2^3 = 8
-        "(2 MEM)",
-
-        # Testes com parênteses (só decorativos, vão ser ignorados)
-        "(MEM)",             
-        "(( 3 2 + ) ( 10 5 / ) *)",  
-        "((12 4 /) (3 5 *) +)",  
-    ]
-
-    for expr in testes:
-        print(f"\nExpressão: {expr}")
-        tokens = parseExpressao(expr)
-        resultado = executarExpressao(tokens, memoria, historico)
-        historico.append(resultado)
-        print(f"Resultado = {resultado}")
-"""
-
