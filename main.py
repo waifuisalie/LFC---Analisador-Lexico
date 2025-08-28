@@ -145,16 +145,18 @@ class Analisador_Lexico:
         # Checa qual dos dois comandos (MEM ou RES) foi inserido
         if resultado == "MEM":
             return Token(Tipo_de_Token.MEM, resultado) 
-        else:
+        elif resultado == "RES":
             return Token(Tipo_de_Token.RES, resultado)
+        else:
+            raise ValueError(f"Comando inválido: '{resultado}'")
         
-def parseExpressao(linha: str):
-    analisador_lexico = Analisador_Lexico(linha)
+def parseExpressao(linha_operacao):
+    analisador_lexico = Analisador_Lexico(linha_operacao)
     tokens = analisador_lexico.analise()
     # Vamos remover os tokens de parênteses, pois não são necessários na RPN
     # Mas manteremos para validação futura, se necessário
     tokens = [t for t in tokens if t.tipo not in 
-              (Tipo_de_Token.ABRE_PARENTESES, Tipo_de_Token.FECHA_PARENTESES)]
+            (Tipo_de_Token.ABRE_PARENTESES, Tipo_de_Token.FECHA_PARENTESES)]
     return tokens
 
 def arredondar_16bit(valor):
@@ -242,3 +244,53 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
     else:
         print(f"-> Erro: {len(pilha)} itens na pilha: {pilha}")
         return arredondar_16bit(pilha[-1]) if pilha else 0.0
+
+def lerArquivos(nomeArquivo: str): 
+    try:
+        with open(nomeArquivo, 'r', encoding="utf-8") as arquivos_teste:
+            linhas = [linha.strip() for linha in arquivos_teste if linha.strip()]
+        return linhas 
+    except FileNotFoundError:
+        print(f'-> Erro: Arquivo não encontrado: {nomeArquivo}')
+        return []
+    
+def exibirResultados(vetor_linhas: list[str]) -> None: 
+    memoria_global = {}
+    historico_global =[]
+    tokens_salvo = []
+
+    for i ,linha in enumerate(vetor_linhas, start=1): 
+            lista_de_tokens = parseExpressao(linha)
+            # Limpa a linha dos parênteses para salvar os tokens
+            linhas_tokens_recebidos = linha.replace('(', '').replace(')', '').strip().split()
+            tokens_salvo.append(linhas_tokens_recebidos)
+            resultado = executarExpressao(lista_de_tokens, memoria_global, historico_global)
+
+            if resultado is not None:
+                historico_global.append(resultado)
+            
+            print(f"Linha {i:02d}: Expressão '{linha}' -> Resultado: {resultado}")
+            
+    try:
+        # Cria o arquivo tokens_gerados.txt e escreve os tokens nele
+        with open("tokens_gerados.txt","w", encoding='utf-8') as f:
+            for lista_de_tokens in tokens_salvo:
+                linha_formatada = " ".join(lista_de_tokens)
+                f.write(linha_formatada + "\n")
+    except Exception as e:
+        print(f'Erro ao escreve os tokens no arquivo {e}')
+
+if __name__ == "__main__":
+    # Não aceita argumentos suficientes
+    if len(sys.argv) < 2:
+        print("Erro: Especificar nome do arquivo de teste")
+        sys.exit(1)
+    # Pega o nome do arquivo a partir dos argumentos da linha de comando
+    arquivo = sys.argv[1]
+    # Inicia-se a leitura do arquivo e o processamento das operações
+    operacoes_lidas = lerArquivos(arquivo)
+    # Exibe os resultados
+    print("\nArquivo de teste:", f"{arquivo}\n")
+    exibirResultados(operacoes_lidas)
+    print("\n--- FIM DOS TESTES ---\n")
+
