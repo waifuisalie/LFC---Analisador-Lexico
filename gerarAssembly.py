@@ -1,6 +1,6 @@
 def gerarAssembly(tokens, codigoAssembly):
     """
-    Gera código Assembly AVR para Arduino Uno a partir de tokens RPN
+    Gera código Assembly AVR para Arduino Uno a partir de tokens RPN - 16-BIT VERSION
     
     Args:
         tokens (list): Lista de strings contendo os tokens da expressão RPN
@@ -34,7 +34,8 @@ def _gerar_header_assembly(codigo):
     header = [
         "; ====================================================================",
         "; Código Assembly gerado automaticamente para Arduino Uno (ATmega328p)",
-        "; Processador de expressões RPN (Reverse Polish Notation)",
+        "; Processador de expressões RPN (Reverse Polish Notation) - 16-BIT VERSION",
+        "; Suporte para inteiros de 0 a 65535",
         "; Compilado com PlatformIO/AVR-GCC",
         "; ====================================================================",
         "",
@@ -47,758 +48,34 @@ def _gerar_header_assembly(codigo):
     codigo.extend(header)
 
 
-def _gerar_secao_dados(codigo):
-    """Gera a seção de dados (variáveis e constantes)"""
-    dados = [
-        "; ====================================================================", 
-        "; SEÇÃO DE DADOS",
-        "; ====================================================================",
-        "",
-        "; Stack pointer para pilha de floats (simula pilha RPN)",
-        "; Usaremos registradores r16-r31 para operações",
-        "; Memória SRAM para armazenar resultados e variáveis",
-        "",
-        ".section .data",
-        "stack_ptr: .byte 1        ; Ponteiro da pilha RPN",
-        "mem_vars:  .space 26      ; Espaço para 26 variáveis (A-Z)",
-        "temp_result: .space 4     ; Resultado temporário (4 bytes para float)",
-        "",
-        ".section .text",
-        ""
-    ]
-    codigo.extend(dados)
-
-
-def _gerar_secao_codigo(codigo, tokens):
-    """Gera o código principal que processa os tokens RPN"""
-    codigo_principal = [
-        "; ====================================================================",
-        "; SEÇÃO DE CÓDIGO PRINCIPAL", 
-        "; ====================================================================",
-        "",
-        "main:",
-        "    ; Inicializar stack pointer",
-        "    ldi r16, 0xFF",
-        "    out SPL, r16",
-        "    ldi r16, 0x08", 
-        "    out SPH, r16",
-        "",
-        "    ; Inicializar UART para debug (9600 baud)",
-        "    rcall uart_init",
-        "",
-        "    ; Inicializar pilha RPN",
-        "    rcall stack_init",
-        "",
-        "    ; Processar expressão RPN",
-        "    rcall processar_rpn",
-        "",
-        "    ; Enviar resultado via UART",
-        "    rcall send_result",
-        "",
-        "    ; Loop infinito",
-        "    rjmp end_program",
-        ""
-    ]
-    codigo.extend(codigo_principal)
-    
-    # Aqui será onde processaremos os tokens individualmente
-    _gerar_processamento_tokens(codigo, tokens)
-
-
-def _gerar_processamento_tokens(codigo, tokens):
-    """Gera código específico para processar cada token"""
-    codigo.extend([
-        "; ====================================================================",
-        "; PROCESSAMENTO DOS TOKENS RPN",
-        "; ====================================================================",
-        "",
-        "processar_rpn:",
-        "    ; Processando expressão RPN:",
-    ])
-    
-    # Para debug: lista os tokens como comentários
-    token_str = " ".join(tokens)
-    codigo.append(f"    ; Expressão: {token_str}")
-    codigo.append("")
-    
-    # Debug: Enviar mensagem inicial
-    codigo.extend([
-        "    ; Debug: Enviar mensagem inicial",
-        "    ldi r16, 'S'",
-        "    rcall uart_transmit",
-        "    ldi r16, 't'",
-        "    rcall uart_transmit",
-        "    ldi r16, 'a'",
-        "    rcall uart_transmit",
-        "    ldi r16, 'r'",
-        "    rcall uart_transmit",
-        "    ldi r16, 't'",
-        "    rcall uart_transmit",
-        "    ldi r16, 13",
-        "    rcall uart_transmit",
-        "    ldi r16, 10",
-        "    rcall uart_transmit",
-        ""
-    ])
-    
-    # Processa cada token individualmente
-    for i, token in enumerate(tokens):
-        codigo.append(f"    ; Processando token {i}: '{token}'")
-        
-        # Verifica o tipo do token
-        if _is_number(token):
-            # Se é número, empilha na pilha RPN
-            if _is_integer(token):
-                valor = int(float(token))  # Converte para int se não tem parte decimal
-                codigo.extend(_gerar_push_int_com_debug(valor))
-            else:
-                # Para floats, vamos simplificar usando apenas inteiros por enquanto :3
-                valor = int(float(token))
-                codigo.extend(_gerar_push_int_com_debug(valor))
-                
-        elif token in ['+', '-', '*', '/', '%', '^']:
-            # Operações aritméticas
-            codigo.extend(_gerar_operacao(token))
-            
-        elif token == 'MEM':
-            # Comando MEM - armazena resultado em variável
-            codigo.extend([
-                "    rcall comando_mem     ; Comando MEM",
-                ""
-            ])
-            
-        elif token == 'RES':
-            # Comando RES - recupera variável
-            codigo.extend([
-                "    rcall comando_res     ; Comando RES", 
-                ""
-            ])
-            
-        elif _is_variable_mem(token):
-            # Carrega variável de memória
-            var_index = ord(token) - ord('A')  # A=0, B=1, etc.
-            codigo.extend([
-                f"    ldi r17, {var_index}  ; Índice da variável {token}",
-                "    rcall load_var        ; Carrega variável",
-                ""
-            ])
-        else:
-            codigo.append(f"    ; Token desconhecido: {token}")
-            codigo.append("")
-    
-    codigo.extend([
-        "    ; Fim do processamento",
-        "    ret",
-        "",
-    ])
-
-
-def _gerar_push_int_com_debug(valor):
-    """Gera código para empilhar um inteiro com debug"""
-    return [
-        f"    ; Debug: Enviar \"P{valor}\"",
-        "    ldi r16, 'P'",
-        "    rcall uart_transmit",
-        f"    ldi r16, '{valor}'",
-        "    rcall uart_transmit",
-        "    ldi r16, ' '",
-        "    rcall uart_transmit",
-        "",
-        f"    ldi r16, {valor & 0xFF}      ; Byte baixo do valor {valor}",
-        f"    ldi r17, {(valor >> 8) & 0xFF} ; Byte alto do valor {valor}",
-        "    rcall stack_push_int         ; Empilha valor inteiro",
-        ""
-    ]
-
-
-def _gerar_push_int(valor):
-    """Gera código para empilhar um inteiro (versão sem debug para compatibilidade)"""
-    return [
-        f"    ldi r16, {valor & 0xFF}      ; Byte baixo do valor {valor}",
-        f"    ldi r17, {(valor >> 8) & 0xFF} ; Byte alto do valor {valor}",
-        "    rcall stack_push_int         ; Empilha valor inteiro",
-        ""
-    ]
-
-
-def _gerar_operacao(operador):
-    """Gera código para operações aritméticas"""
-    operacoes = {
-        '+': [
-            "    ; Debug: Enviar \"ADD\"",
-            "    ldi r16, 'A'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'D'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'D'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove segundo operando",
-            "",
-            "    ; Debug: Mostrar primeiro pop",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "",
-            "    mov r18, r16             ; Salva segundo operando em r18:r19",
-            "    mov r19, r17",
-            "",
-            "    rcall stack_pop_int      ; Remove primeiro operando",
-            "",
-            "    ; Debug: Mostrar segundo pop",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "",
-            "    ; SOMA MAIS CONTROLADA",
-            "    clr r17                  ; Garantir que r17 está limpo",
-            "    clr r19                  ; Garantir que r19 está limpo",
-            "    add r16, r18             ; Soma apenas os bytes baixos: r16 = r16 + r18",
-            "",
-            "    ; Debug: Mostrar resultado da soma",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado",
-            "    pop r16",
-            "",
-            "    rcall stack_push_int     ; Empilha resultado",
-            ""
-        ],
-        '-': [
-            "    ; Debug: Enviar \"SUB\"",
-            "    ldi r16, 'S'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'U'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'B'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove segundo operando (b)",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug", 
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    mov r18, r16             ; Salva b em r18:r19",
-            "    mov r19, r17", 
-            "    rcall stack_pop_int      ; Remove primeiro operando (a)",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit", 
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    clr r17                  ; Garantir que r17 está limpo",
-            "    clr r19                  ; Garantir que r19 está limpo",
-            "    sub r16, r18             ; Subtração: r16 = a - b",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado", 
-            "    pop r16",
-            "    rcall stack_push_int     ; Empilha resultado",
-            ""
-        ],
-        '*': [
-            "    ; Debug: Enviar \"MUL\"",
-            "    ldi r16, 'M'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'U'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'L'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove segundo operando",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    mov r18, r16             ; Salva em r18",
-            "    rcall stack_pop_int      ; Remove primeiro operando",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug", 
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    rcall multiply_int       ; Multiplicação r16 * r18",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado",
-            "    pop r16",
-            "    rcall stack_push_int     ; Empilha resultado",
-            ""
-        ],
-        '/': [
-            "    ; Debug: Enviar \"DIV\"",
-            "    ldi r16, 'D'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'I'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'V'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove divisor",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    mov r18, r16             ; Salva divisor em r18",
-            "    rcall stack_pop_int      ; Remove dividendo",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    rcall divide_int         ; Divisão r16 / r18",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado",
-            "    pop r16",
-            "    rcall stack_push_int     ; Empilha quociente",
-            ""
-        ],
-        '%': [
-            "    ; Debug: Enviar \"MOD\"",
-            "    ldi r16, 'M'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'O'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'D'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove divisor",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug", 
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    mov r18, r16             ; Salva divisor em r18",
-            "    rcall stack_pop_int      ; Remove dividendo",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    rcall modulo_int         ; Resto r16 % r18",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado",
-            "    pop r16",
-            "    rcall stack_push_int     ; Empilha resto",
-            ""
-        ],
-        '^': [
-            "    ; Debug: Enviar \"POW\"",
-            "    ldi r16, 'P'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'O'",
-            "    rcall uart_transmit",
-            "    ldi r16, 'W'",
-            "    rcall uart_transmit",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "",
-            "    rcall stack_pop_int      ; Remove expoente",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    mov r18, r16             ; Salva expoente em r18",
-            "    rcall stack_pop_int      ; Remove base",
-            "    push r16                 ; Salvar r16 antes do debug",
-            "    push r17                 ; Salvar r17 antes do debug",
-            "    rcall send_number",
-            "    ldi r16, ' '",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar r17",
-            "    pop r16                  ; Restaurar r16",
-            "    rcall power_int          ; Potência r16 ^ r18",
-            "    push r16                 ; Salvar resultado",
-            "    push r17",
-            "    rcall send_number",
-            "    ldi r16, 13",
-            "    rcall uart_transmit",
-            "    ldi r16, 10",
-            "    rcall uart_transmit",
-            "    pop r17                  ; Restaurar resultado",
-            "    pop r16",
-            "    rcall stack_push_int     ; Empilha resultado",
-            ""
-        ]
-    }
-    return operacoes.get(operador, [f"    ; Operação {operador} não implementada", ""])
-
-
-def _gerar_rotinas_auxiliares(codigo):
-    """Gera rotinas auxiliares para pilha e operações"""
-    rotinas = [
-        "; ====================================================================",
-        "; ROTINAS AUXILIARES",
-        "; ====================================================================",
-        "",
-        "; Inicialização da UART",
-        "uart_init:",
-        "    ; Set baud rate to 9600",
-        "    ldi r16, 0",
-        "    sts UBRR0H, r16",
-        "    ldi r16, BAUD_9600",
-        "    sts UBRR0L, r16",
-        "    ; Enable transmitter",
-        "    ldi r16, (1 << TXEN0)",
-        "    sts UCSR0B, r16",
-        "    ; Set frame format: 8N1",
-        "    ldi r16, ((1 << UCSZ01)|(1 << UCSZ00))",
-        "    sts UCSR0C, r16",
-        "    ret",
-        "",
-        "; Inicialização da pilha RPN",
-        "stack_init:",
-        "    ldi r16, 0",
-        "    sts stack_ptr, r16       ; Zera ponteiro da pilha",
-        "    ret",
-        "",
-        "; VERSÃO SIMPLIFICADA E MAIS ROBUSTA: Empilha inteiro de 16 bits (r16:r17)",
-        "; Usa endereçamento direto na SRAM para evitar problemas",
-        "stack_push_int:",
-        "    push r20",
-        "    push r30",
-        "    push r31",
-        "    ",
-        "    ; Get current stack pointer",
-        "    lds r20, stack_ptr",
-        "    ",
-        "    ; Use direct SRAM addressing starting from 0x0200 (safe area)",
-        "    ; Each entry is 2 bytes, so address = 0x0200 + (stack_ptr * 2)",
-        "    ldi r30, 0x00          ; Base address low byte (0x0200)",
-        "    ldi r31, 0x02          ; Base address high byte",
-        "    ",
-        "    ; Add offset (stack_ptr * 2)",
-        "    lsl r20                ; r20 = stack_ptr * 2",
-        "    add r30, r20           ; Add to base address",
-        "    brcc no_carry_push     ; Branch if no carry",
-        "    inc r31                ; Handle carry",
-        "no_carry_push:",
-        "    ",
-        "    ; Store the 16-bit value",
-        "    st Z+, r16             ; Store low byte and increment Z",
-        "    st Z, r17              ; Store high byte",
-        "    ",
-        "    ; Increment stack pointer",
-        "    lds r20, stack_ptr",
-        "    inc r20",
-        "    sts stack_ptr, r20",
-        "    ",
-        "    pop r31",
-        "    pop r30",
-        "    pop r20",
-        "    ret",
-        "",
-        "; VERSÃO SIMPLIFICADA E MAIS ROBUSTA: Desempilha inteiro de 16 bits para r16:r17",
-        "stack_pop_int:",
-        "    push r20",
-        "    push r30",
-        "    push r31",
-        "    ",
-        "    ; Decrement stack pointer first",
-        "    lds r20, stack_ptr",
-        "    dec r20",
-        "    sts stack_ptr, r20",
-        "    ",
-        "    ; Use direct SRAM addressing starting from 0x0200",
-        "    ldi r30, 0x00          ; Base address low byte",
-        "    ldi r31, 0x02          ; Base address high byte",
-        "    ",
-        "    ; Add offset (stack_ptr * 2)",
-        "    lsl r20                ; r20 = stack_ptr * 2",
-        "    add r30, r20           ; Add to base address",
-        "    brcc no_carry_pop      ; Branch if no carry",
-        "    inc r31                ; Handle carry",
-        "no_carry_pop:",
-        "    ",
-        "    ; Load the 16-bit value",
-        "    ld r16, Z+             ; Load low byte and increment Z",
-        "    ld r17, Z              ; Load high byte",
-        "    ",
-        "    pop r31",
-        "    pop r30",
-        "    pop r20",
-        "    ret",
-        "",
-        "; Multiplicação simples de 16 bits (r16:r17 * r18:r19 -> r16:r17)",
-        "multiply_int:",
-        "    ; For simplicity, we'll do 8-bit multiplication",
-        "    ; This assumes both numbers fit in 8 bits",
-        "    mul r16, r18             ; Multiply low bytes",
-        "    movw r16, r0             ; Move result to r16:r17",
-        "    clr r1                   ; Clear r1 (required after mul)",
-        "    clr r0                   ; Clear r0 for safety",
-        "    ret",
-        "",
-        "; Divisão simples de 8 bits (r16 / r18 -> r16, remainder ignored)",
-        "divide_int:",
-        "    clr r17                  ; Quotient counter",
-        "    cp r16, r18              ; Compare dividend with divisor",
-        "    brlo div_done            ; If smaller, quotient = 0",
-        "div_loop:",
-        "    sub r16, r18             ; Subtract divisor",
-        "    inc r17                  ; Increment quotient",
-        "    cp r16, r18              ; Can still divide?",
-        "    brsh div_loop            ; If yes, continue",
-        "div_done:",
-        "    mov r16, r17             ; Result in r16",
-        "    clr r17                  ; Clear r17",
-        "    ret",
-        "",
-        "; Módulo simples (r16 % r18 -> r16)",  
-        "modulo_int:",
-        "    cp r16, r18",
-        "    brlo mod_done            ; If dividend < divisor, remainder = dividend",
-        "mod_loop:",
-        "    sub r16, r18",
-        "    cp r16, r18",
-        "    brsh mod_loop",
-        "mod_done:",
-        "    ret",
-        "",
-        "; Potência simples (r16 ^ r18 -> r16)",
-        "power_int:",
-        "    cpi r18, 0               ; Exponent = 0?",
-        "    brne pow_start",
-        "    ldi r16, 1               ; x^0 = 1",
-        "    clr r17",
-        "    ret",
-        "pow_start:",
-        "    cpi r18, 1               ; Exponent = 1?",
-        "    breq pow_done2           ; x^1 = x",
-        "    mov r19, r16             ; Save base",
-        "    dec r18                  ; Decrement exponent",
-        "pow_loop:",
-        "    mul r16, r19             ; Multiply by base",
-        "    mov r16, r0              ; Get result",
-        "    clr r0                   ; Clear r0",
-        "    clr r1                   ; Clear r1",
-        "    dec r18",
-        "    brne pow_loop",
-        "pow_done2:",
-        "    clr r17                  ; Ensure high byte is clear",
-        "    ret",
-        "",
-        "; Comando MEM - armazena resultado no topo da pilha",
-        "comando_mem:",
-        "    ; Implementação simplificada",
-        "    ret",
-        "",
-        "; Comando RES - recupera valor da memória",
-        "comando_res:",
-        "    ; Implementação simplificada",
-        "    ret",
-        "",
-        "; Carrega variável da memória",
-        "load_var:",
-        "    ; r17 contém o índice da variável (0-25)",
-        "    ; Implementação simplificada",
-        "    ret",
-        "",
-        "; Envia resultado via UART",
-        "send_result:",
-        "    ; Debug message",
-        "    ldi r16, 'R'",
-        "    rcall uart_transmit",
-        "    ldi r16, ':'",
-        "    rcall uart_transmit",
-        "    ldi r16, ' '",
-        "    rcall uart_transmit",
-        "    ",
-        "    rcall stack_pop_int      ; Pega resultado do topo",
-        "    ; Converte para ASCII e envia",
-        "    rcall send_number",
-        "    ; Envia newline",
-        "    ldi r16, 13",
-        "    rcall uart_transmit",
-        "    ldi r16, 10", 
-        "    rcall uart_transmit",
-        "    ret",
-        "",
-        "; VERSÃO COMPLETAMENTE REESCRITA: Conversão de número para ASCII mais simples e confiável",
-        "send_number:",
-        "    push r17",
-        "    push r18",
-        "    push r19",
-        "    push r20",
-        "    ",
-        "    ; Para debug: vamos lidar apenas com números de 8 bits (0-255)",
-        "    ; Como esperamos resultados pequenos, focaremos apenas em r16",
-        "    mov r18, r16             ; Cópia de trabalho",
-        "    ",
-        "    ; Caso especial: se o número é 0",
-        "    cpi r18, 0",
-        "    brne not_zero",
-        "    ldi r16, '0'",
-        "    rcall uart_transmit",
-        "    rjmp send_num_done",
-        "    ",
-        "not_zero:",
-        "    ; Contar centenas",
-        "    clr r19                  ; Contador de centenas",
-        "    cpi r18, 100",
-        "    brlo tens_phase",
-        "hundreds_loop:",
-        "    cpi r18, 100",
-        "    brlo hundreds_done",
-        "    subi r18, 100",
-        "    inc r19",
-        "    rjmp hundreds_loop",
-        "hundreds_done:",
-        "    cpi r19, 0",
-        "    breq tens_phase",
-        "    ; Enviar dígito das centenas",
-        "    mov r16, r19",
-        "    ldi r17, '0'",
-        "    add r16, r17             ; Converter para ASCII",
-        "    rcall uart_transmit",
-        "",
-        "tens_phase:",
-        "    ; Contar dezenas",
-        "    clr r20                  ; Contador de dezenas",
-        "    cpi r18, 10",
-        "    brlo ones_phase",
-        "tens_loop:",
-        "    cpi r18, 10",
-        "    brlo tens_done",
-        "    subi r18, 10",
-        "    inc r20",
-        "    rjmp tens_loop",
-        "tens_done:",
-        "    ; Enviar dígito das dezenas se temos centenas OU dezenas > 0",
-        "    cpi r19, 0               ; Enviamos centenas?",
-        "    brne send_tens",
-        "    cpi r20, 0               ; Temos dezenas?",
-        "    breq ones_phase",
-        "send_tens:",
-        "    mov r16, r20",
-        "    ldi r17, '0'",
-        "    add r16, r17             ; Converter para ASCII",
-        "    rcall uart_transmit",
-        "",
-        "ones_phase:",
-        "    ; Sempre enviar dígito das unidades",
-        "    mov r16, r18             ; r18 agora contém o resto (0-9)",
-        "    ldi r17, '0'",
-        "    add r16, r17             ; Converter para ASCII",
-        "    rcall uart_transmit",
-        "",
-        "send_num_done:",
-        "    pop r20",
-        "    pop r19",
-        "    pop r18",
-        "    pop r17",
-        "    ret",
-        "",
-        "; Transmite caractere via UART",
-        "uart_transmit:",
-        "    push r22",
-        "wait_transmit2:",
-        "    lds r22, UCSR0A",
-        "    sbrs r22, UDRE0",
-        "    rjmp wait_transmit2",
-        "    sts UDR0, r16",
-        "    pop r22",
-        "    ret",
-        ""
-    ]
-    codigo.extend(rotinas)
-
-
 def _gerar_footer_assembly(codigo):
     """Gera código de finalização"""
     footer = [
         "; ====================================================================",
-        "; FINALIZAÇÃO",
+        "; FINALIZAÇÃO - 16-BIT VERSION",
         "; ====================================================================",
         "",
         "end_program:",
         "    rjmp end_program         ; Loop infinito",
         "",
         "; ====================================================================",
-        "; FIM DO CÓDIGO",
+        "; FIM DO CÓDIGO - 16-BIT RPN CALCULATOR",
+        "; Suporte completo para inteiros de 0 a 65535",
         "; ====================================================================",
     ]
     codigo.extend(footer)
 
 
-
 # ====================================================================
-# GERANDO CÓDIGO REGISTERS.INC
+# GERANDO CÓDIGO REGISTERS.INC - 16-BIT VERSION
 # ====================================================================
-
 
 def save_registers_inc(nome_arquivo="registers.inc"):
-    """Cria o arquivo registers.inc com as definições do ATmega328P"""
+    """Cria o arquivo registers.inc com as definições do ATmega328P - 16-BIT VERSION"""
     conteudo = """; ATmega328P Register Definitions
 ; Custom header for assembly programming
-; Updated for RPN Calculator Project
+; Updated for RPN Calculator Project - TRUE 16-BIT VERSION
+; Supports integers from 0 to 65535
 
 ; Stack Pointer Registers
 .equ SPL,     0x3D    ; Stack Pointer Low
@@ -870,7 +147,7 @@ def save_registers_inc(nome_arquivo="registers.inc"):
 .equ INT1_VECTOR,     0x0002
 .equ TIMER0_OVF_VECTOR, 0x0010
 
-; Useful Constants
+; Useful Constants for 16-bit Calculator
 .equ BAUD_9600, 103     ; Baud rate divisor for 9600 bps at 16MHz
 .equ BAUD_19200, 51     ; Baud rate divisor for 19200 bps at 16MHz
 .equ BAUD_38400, 25     ; Baud rate divisor for 38400 bps at 16MHz
@@ -882,32 +159,41 @@ def save_registers_inc(nome_arquivo="registers.inc"):
 .equ ASCII_LF,    10    ; Line Feed
 .equ ASCII_SPACE, 32    ; Space character
 
-; Math Constants (for RPN calculator)
+; 16-bit Math Constants for RPN calculator
 .equ MAX_STACK_SIZE, 16 ; Maximum stack depth for RPN
 .equ MAX_VARIABLES, 26  ; Number of variables (A-Z)
+.equ MAX_INT16, 65535   ; Maximum 16-bit unsigned integer
+.equ MIN_INT16, 0       ; Minimum 16-bit unsigned integer
 
-; Memory Layout for RPN Calculator
-.equ RPN_STACK_START, 0x0200   ; Start of RPN stack in SRAM
-.equ RPN_VARS_START,  0x0300   ; Start of variable storage
+; Memory Layout for 16-bit RPN Calculator
+.equ RPN_STACK_START, 0x0200   ; Start of RPN stack in SRAM (16-bit entries)
+.equ RPN_VARS_START,  0x0300   ; Start of variable storage (16-bit each)
 .equ RPN_TEMP_START,  0x0400   ; Temporary calculation area
+.equ DIGIT_BUFFER,    0x0500   ; Buffer for number to string conversion
 
 ; Status Flags for RPN Calculator
-.equ FLAG_OVERFLOW,   0    ; Arithmetic overflow
+.equ FLAG_OVERFLOW,   0    ; Arithmetic overflow (bit position)
 .equ FLAG_UNDERFLOW,  1    ; Stack underflow  
 .equ FLAG_DIVZERO,    2    ; Division by zero
 .equ FLAG_INVALID,    3    ; Invalid operation
 
-; Register Usage Convention for RPN Calculator
-; r16-r19: General purpose, arithmetic operations
-; r20-r23: Stack operations, temporary storage
-; r24-r27: Variable operations, memory access
-; r28-r31: Pointer registers (X, Y, Z)
-; Note: r0, r1 used by mul instruction - clear r1 after use!
+; Register Usage Convention for 16-bit RPN Calculator
+; r16-r17: Primary 16-bit operand (little endian: r16=low, r17=high)
+; r18-r19: Secondary 16-bit operand (little endian: r18=low, r19=high)
+; r20-r23: Temporary storage for 16-bit operations
+; r24-r27: Variable operations, memory access, loop counters
+; r28-r31: Pointer registers (X=r27:r26, Y=r29:r28, Z=r31:r30)
+; 
+; IMPORTANT NOTES:
+; - r0, r1 used by mul instruction - always clear r1 after mul!
+; - All 16-bit values stored in little endian format (low byte first)
+; - Stack grows from 0x0200 upward, each entry is 2 bytes
+; - Maximum safe operations depend on available SRAM (2KB total)
 """
     try:
         with open(nome_arquivo, 'w', encoding='utf-8') as f:
             f.write(conteudo)
-        print(f"Arquivo {nome_arquivo} criado com sucesso.")
+        print(f"Arquivo {nome_arquivo} criado com sucesso (16-bit version).")
         return True
     except Exception as e:
         print(f"Erro ao criar {nome_arquivo}: {e}")
@@ -915,7 +201,7 @@ def save_registers_inc(nome_arquivo="registers.inc"):
 
 
 # ====================================================================
-# FUNÇÕES AUXILIARES PARA ANÁLISE DE TOKENS
+# FUNÇÕES AUXILIARES PARA ANÁLISE DE TOKENS - 16-BIT VERSION
 # ====================================================================
 
 def _is_number(token):
@@ -947,24 +233,1116 @@ def save_assembly(codigo_assembly, nome_arquivo="programa.s"):
         with open(nome_arquivo, 'w', encoding='utf-8') as arquivo:
             for linha in codigo_assembly:
                 arquivo.write(linha + '\n')
-        print(f"Código Assembly salvo em: {nome_arquivo}")
+        print(f"Código Assembly salvo em: {nome_arquivo} (16-bit version)")
         return True
     except Exception as e:
         print(f"Erro ao salvar arquivo: {e}")
         return False
 
 
-# Função de teste
+def _gerar_secao_dados(codigo):
+    """Gera a seção de dados (variáveis e constantes)"""
+    dados = [
+        "; ====================================================================", 
+        "; SEÇÃO DE DADOS - 16-BIT VERSION",
+        "; ====================================================================",
+        "",
+        "; Stack pointer para pilha de inteiros 16-bit (simula pilha RPN)",
+        "; Cada entrada da pilha ocupa 2 bytes (16 bits)",
+        "; Memória SRAM para armazenar resultados e variáveis",
+        "",
+        ".section .data",
+        "stack_ptr: .byte 1        ; Ponteiro da pilha RPN",
+        "mem_vars:  .space 52      ; Espaço para 26 variáveis de 16-bit (A-Z)",
+        "temp_result: .space 4     ; Resultado temporário",
+        "",
+        ".section .text",
+        ""
+    ]
+    codigo.extend(dados)
+
+
+def _gerar_secao_codigo(codigo, tokens):
+    """Gera o código principal que processa os tokens RPN"""
+    codigo_principal = [
+        "; ====================================================================",
+        "; SEÇÃO DE CÓDIGO PRINCIPAL - 16-BIT VERSION", 
+        "; ====================================================================",
+        "",
+        "main:",
+        "    ; Inicializar stack pointer",
+        "    ldi r16, 0xFF",
+        "    out SPL, r16",
+        "    ldi r16, 0x08", 
+        "    out SPH, r16",
+        "",
+        "    ; Inicializar UART para debug (9600 baud)",
+        "    rcall uart_init",
+        "",
+        "    ; Inicializar pilha RPN",
+        "    rcall stack_init",
+        "",
+        "    ; Processar expressão RPN",
+        "    rcall processar_rpn",
+        "",
+        "    ; Enviar resultado via UART",
+        "    rcall send_result",
+        "",
+        "    ; Loop infinito",
+        "    rjmp end_program",
+        ""
+    ]
+    codigo.extend(codigo_principal)
+    
+    # Aqui será onde processaremos os tokens individualmente
+    _gerar_processamento_tokens(codigo, tokens)
+
+
+def _gerar_processamento_tokens(codigo, tokens):
+    """Gera código específico para processar cada token"""
+    codigo.extend([
+        "; ====================================================================",
+        "; PROCESSAMENTO DOS TOKENS RPN - 16-BIT VERSION",
+        "; ====================================================================",
+        "",
+        "processar_rpn:",
+        "    ; Processando expressão RPN com suporte 16-bit:",
+    ])
+    
+    # Para debug: lista os tokens como comentários
+    token_str = " ".join(tokens)
+    codigo.append(f"    ; Expressão: {token_str}")
+    codigo.append("")
+    
+    # Debug: Enviar mensagem inicial
+    codigo.extend([
+        "    ; Debug: Enviar mensagem inicial",
+        "    ldi r16, 'S'",
+        "    rcall uart_transmit",
+        "    ldi r16, 't'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'a'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'r'",
+        "    rcall uart_transmit",
+        "    ldi r16, 't'",
+        "    rcall uart_transmit",
+        "    ldi r16, 13",
+        "    rcall uart_transmit",
+        "    ldi r16, 10",
+        "    rcall uart_transmit",
+        ""
+    ])
+    
+    # Processa cada token individualmente
+    for i, token in enumerate(tokens):
+        codigo.append(f"    ; Processando token {i}: '{token}'")
+        
+        # Verifica o tipo do token
+        if _is_number(token):
+            # Se é número, empilha na pilha RPN
+            if _is_integer(token):
+                valor = int(float(token))  # Converte para int se não tem parte decimal
+                # Verifica se está dentro do range 16-bit
+                if valor > 65535:
+                    print(f"Aviso: Valor {valor} excede 16-bit, truncando para {valor & 0xFFFF}")
+                    valor = valor & 0xFFFF
+                codigo.extend(_gerar_push_int_com_debug(valor))
+            else:
+                # Para floats, vamos simplificar usando apenas inteiros por enquanto
+                valor = int(float(token))
+                if valor > 65535:
+                    print(f"Aviso: Valor {valor} excede 16-bit, truncando para {valor & 0xFFFF}")
+                    valor = valor & 0xFFFF
+                codigo.extend(_gerar_push_int_com_debug(valor))
+                
+        elif token in ['+', '-', '*', '/', '%', '^']:
+            # Operações aritméticas
+            codigo.extend(_gerar_operacao(token))
+            
+        elif token == 'MEM':
+            # Comando MEM - armazena resultado em variável
+            codigo.extend([
+                "    rcall comando_mem     ; Comando MEM",
+                ""
+            ])
+            
+        elif token == 'RES':
+            # Comando RES - recupera variável
+            codigo.extend([
+                "    rcall comando_res     ; Comando RES", 
+                ""
+            ])
+            
+        elif _is_variable_mem(token):
+            # Carrega variável de memória
+            var_index = ord(token) - ord('A')  # A=0, B=1, etc.
+            codigo.extend([
+                f"    ldi r17, {var_index}  ; Índice da variável {token}",
+                "    rcall load_var        ; Carrega variável",
+                ""
+            ])
+        else:
+            codigo.append(f"    ; Token desconhecido: {token}")
+            codigo.append("")
+    
+    codigo.extend([
+        "    ; Fim do processamento",
+        "    ret",
+        "",
+    ])
+
+
+def _gerar_push_int_com_debug(valor):
+    """Gera código para empilhar um inteiro com debug - 16-BIT VERSION"""
+    # Handle values larger than single digits for debug display
+    if valor < 10:
+        digit_char = str(valor)
+    else:
+        digit_char = 'X'  # Use 'X' for multi-digit numbers in debug
+    
+    return [
+        f"    ; Debug: Enviar \"P{valor}\"",
+        "    ldi r16, 'P'",
+        "    rcall uart_transmit",
+        f"    ldi r16, '{digit_char}'",
+        "    rcall uart_transmit",
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
+        "",
+        f"    ldi r16, {valor & 0xFF}      ; Byte baixo do valor {valor}",
+        f"    ldi r17, {(valor >> 8) & 0xFF} ; Byte alto do valor {valor}",
+        "    rcall stack_push_int         ; Empilha valor inteiro 16-bit",
+        ""
+    ]
+
+
+def _gerar_push_int(valor):
+    """Gera código para empilhar um inteiro (versão sem debug para compatibilidade)"""
+    return [
+        f"    ldi r16, {valor & 0xFF}      ; Byte baixo do valor {valor}",
+        f"    ldi r17, {(valor >> 8) & 0xFF} ; Byte alto do valor {valor}",
+        "    rcall stack_push_int         ; Empilha valor inteiro 16-bit",
+        ""
+    ]
+
+
+def _gerar_operacao(operador):
+    """Gera código para operações aritméticas - 16-BIT VERSION"""
+    operacoes = {
+        '+': [
+            "    ; Debug: Enviar \"ADD\"",
+            "    ldi r16, 'A'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'D'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'D'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove segundo operando",
+            "",
+            "    ; Debug: Mostrar segundo operando (bytes individuais)",
+            "    push r16                 ; Salvar r16",
+            "    push r17                 ; Salvar r17",
+            "    ldi r16, 'B'             ; Debug: mostrar bytes",
+            "    rcall uart_transmit",
+            "    ldi r16, ':'",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    push r16                 ; Salvar novamente para debug",
+            "    push r17",
+            "    mov r16, r17             ; Move high byte para r16", 
+            "    rcall send_byte_as_hex   ; Enviar byte alto como hex",
+            "    pop r17                  ; Restaurar",
+            "    pop r16                  ; Restaurar low byte",
+            "    push r16                 ; Salvar novamente",
+            "    push r17",
+            "    rcall send_byte_as_hex   ; Enviar byte baixo como hex",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar",
+            "    pop r16",
+            "    push r16                 ; Salvar para debug decimal",
+            "    push r17",
+            "    rcall send_number_16bit  ; Também mostrar como decimal",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "",
+            "    mov r18, r16             ; Salva segundo operando em r18:r19",
+            "    mov r19, r17",
+            "",
+            "    rcall stack_pop_int      ; Remove primeiro operando",
+            "",
+            "    ; Debug: Mostrar primeiro operando (bytes individuais)",
+            "    push r16                 ; Salvar r16",
+            "    push r17                 ; Salvar r17",
+            "    ldi r16, 'A'             ; Debug: mostrar bytes",
+            "    rcall uart_transmit",
+            "    ldi r16, ':'",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    push r16                 ; Salvar novamente para debug",
+            "    push r17",
+            "    mov r16, r17             ; Move high byte para r16", 
+            "    rcall send_byte_as_hex   ; Enviar byte alto como hex",
+            "    pop r17                  ; Restaurar",
+            "    pop r16                  ; Restaurar low byte",
+            "    push r16                 ; Salvar novamente",
+            "    push r17",
+            "    rcall send_byte_as_hex   ; Enviar byte baixo como hex",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar",
+            "    pop r16",
+            "    push r16                 ; Salvar para debug decimal",
+            "    push r17",
+            "    rcall send_number_16bit  ; Também mostrar como decimal",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "",
+            "    ; TRUE 16-BIT ADDITION",
+            "    add r16, r18             ; Add low bytes",
+            "    adc r17, r19             ; Add high bytes with carry",
+            "",
+            "    ; Debug: Mostrar resultado (bytes individuais)",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    ldi r16, 'R'             ; Debug: resultado bytes",
+            "    rcall uart_transmit",
+            "    ldi r16, ':'",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "    push r16                 ; Salvar novamente",
+            "    push r17",
+            "    rcall send_byte_as_hex   ; Enviar byte alto como hex",
+            "    mov r16, r17             ; Move high byte para r16", 
+            "    rcall send_byte_as_hex   ; Enviar byte baixo como hex",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar",
+            "    pop r16",
+            "    push r16                 ; Salvar para debug decimal",
+            "    push r17",
+            "    rcall send_number_16bit  ; Mostrar como decimal",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "",
+            "    rcall stack_push_int     ; Empilha resultado",
+            ""
+        ],
+        '-': [
+            "    ; Debug: Enviar \"SUB\"",
+            "    ldi r16, 'S'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'U'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'B'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove segundo operando (b)",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug", 
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    mov r18, r16             ; Salva b em r18:r19",
+            "    mov r19, r17", 
+            "    rcall stack_pop_int      ; Remove primeiro operando (a)",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit", 
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "",
+            "    ; TRUE 16-BIT SUBTRACTION", 
+            "    sub r16, r18             ; Subtract low bytes",
+            "    sbc r17, r19             ; Subtract high bytes with borrow",
+            "",
+            "    ; Debug: Mostrar resultado da subtração",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    rcall send_number_16bit",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado", 
+            "    pop r16",
+            "    rcall stack_push_int     ; Empilha resultado",
+            ""
+        ],
+        '*': [
+            "    ; Debug: Enviar \"MUL\"",
+            "    ldi r16, 'M'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'U'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'L'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove segundo operando",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    mov r18, r16             ; Move para r18:r19",
+            "    mov r19, r17",
+            "    rcall stack_pop_int      ; Remove primeiro operando",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug", 
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    rcall multiply_int       ; TRUE 16-bit multiplication",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    rcall send_number_16bit",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "    rcall stack_push_int     ; Empilha resultado",
+            ""
+        ],
+        '/': [
+            "    ; Debug: Enviar \"DIV\"",
+            "    ldi r16, 'D'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'I'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'V'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove divisor",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    mov r18, r16             ; Move divisor para r18:r19",
+            "    mov r19, r17",
+            "    rcall stack_pop_int      ; Remove dividendo",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    rcall divide_int         ; TRUE 16-bit division",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    rcall send_number_16bit",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "    rcall stack_push_int     ; Empilha quociente",
+            ""
+        ],
+        '%': [
+            "    ; Debug: Enviar \"MOD\"",
+            "    ldi r16, 'M'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'O'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'D'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove divisor",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug", 
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    mov r18, r16             ; Move divisor para r18:r19",
+            "    mov r19, r17",
+            "    rcall stack_pop_int      ; Remove dividendo",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    rcall modulo_int         ; TRUE 16-bit modulo",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    rcall send_number_16bit",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "    rcall stack_push_int     ; Empilha resto",
+            ""
+        ],
+        '^': [
+            "    ; Debug: Enviar \"POW\"",
+            "    ldi r16, 'P'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'O'",
+            "    rcall uart_transmit",
+            "    ldi r16, 'W'",
+            "    rcall uart_transmit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "",
+            "    rcall stack_pop_int      ; Remove expoente",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    mov r18, r16             ; Move expoente para r18:r19",
+            "    mov r19, r17",
+            "    rcall stack_pop_int      ; Remove base",
+            "    push r16                 ; Salvar r16 antes do debug",
+            "    push r17                 ; Salvar r17 antes do debug",
+            "    rcall send_number_16bit",
+            "    ldi r16, ' '",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar r17",
+            "    pop r16                  ; Restaurar r16",
+            "    rcall power_int          ; TRUE 16-bit power",
+            "    push r16                 ; Salvar resultado",
+            "    push r17",
+            "    rcall send_number_16bit",
+            "    ldi r16, 13",
+            "    rcall uart_transmit",
+            "    ldi r16, 10",
+            "    rcall uart_transmit",
+            "    pop r17                  ; Restaurar resultado",
+            "    pop r16",
+            "    rcall stack_push_int     ; Empilha resultado",
+            ""
+        ]
+    }
+    return operacoes.get(operador, [f"    ; Operação {operador} não implementada", ""])
+
+
+def _gerar_rotinas_auxiliares(codigo):
+    """Gera rotinas auxiliares para pilha e operações - 16-BIT VERSION"""
+    rotinas = [
+        "; ====================================================================",
+        "; ROTINAS AUXILIARES - TRUE 16-BIT INTEGER SUPPORT",
+        "; Suporte completo para inteiros de 0 a 65535",
+        "; ====================================================================",
+        "",
+        "; Inicialização da UART",
+        "uart_init:",
+        "    ; Set baud rate to 9600",
+        "    ldi r16, 0",
+        "    sts UBRR0H, r16",
+        "    ldi r16, BAUD_9600",
+        "    sts UBRR0L, r16",
+        "    ; Enable transmitter",
+        "    ldi r16, (1 << TXEN0)",
+        "    sts UCSR0B, r16",
+        "    ; Set frame format: 8N1",
+        "    ldi r16, ((1 << UCSZ01)|(1 << UCSZ00))",
+        "    sts UCSR0C, r16",
+        "    ret",
+        "",
+        "; Inicialização da pilha RPN",
+        "stack_init:",
+        "    ldi r16, 0",
+        "    sts stack_ptr, r16       ; Zera ponteiro da pilha",
+        "    ret",
+        "",
+        "; EMPILHA INTEIRO DE 16 BITS (r16:r17)",
+        "; Usa endereçamento direto na SRAM para máxima confiabilidade",
+        "stack_push_int:",
+        "    push r20",
+        "    push r30",
+        "    push r31",
+        "    ",
+        "    ; Get current stack pointer",
+        "    lds r20, stack_ptr",
+        "    ",
+        "    ; Use direct SRAM addressing starting from 0x0200 (safe area)",
+        "    ; Each entry is 2 bytes, so address = 0x0200 + (stack_ptr * 2)",
+        "    ldi r30, 0x00          ; Base address low byte (0x0200)",
+        "    ldi r31, 0x02          ; Base address high byte",
+        "    ",
+        "    ; Add offset (stack_ptr * 2)",
+        "    lsl r20                ; r20 = stack_ptr * 2",
+        "    add r30, r20           ; Add to base address",
+        "    brcc no_carry_push     ; Branch if no carry",
+        "    inc r31                ; Handle carry",
+        "no_carry_push:",
+        "    ",
+        "    ; Store the 16-bit value (little endian)",
+        "    st Z+, r16             ; Store low byte and increment Z",
+        "    st Z, r17              ; Store high byte",
+        "    ",
+        "    ; Increment stack pointer",
+        "    lds r20, stack_ptr",
+        "    inc r20",
+        "    sts stack_ptr, r20",
+        "    ",
+        "    pop r31",
+        "    pop r30",
+        "    pop r20",
+        "    ret",
+        "",
+        "; DESEMPILHA INTEIRO DE 16 BITS para r16:r17",
+        "stack_pop_int:",
+        "    push r20",
+        "    push r30",
+        "    push r31",
+        "    ",
+        "    ; Decrement stack pointer first",
+        "    lds r20, stack_ptr",
+        "    dec r20",
+        "    sts stack_ptr, r20",
+        "    ",
+        "    ; Use direct SRAM addressing starting from 0x0200",
+        "    ldi r30, 0x00          ; Base address low byte",
+        "    ldi r31, 0x02          ; Base address high byte",
+        "    ",
+        "    ; Add offset (stack_ptr * 2)",
+        "    lsl r20                ; r20 = stack_ptr * 2",
+        "    add r30, r20           ; Add to base address",
+        "    brcc no_carry_pop      ; Branch if no carry",
+        "    inc r31                ; Handle carry",
+        "no_carry_pop:",
+        "    ",
+        "    ; Load the 16-bit value (little endian)",
+        "    ld r16, Z+             ; Load low byte and increment Z",
+        "    ld r17, Z              ; Load high byte",
+        "    ",
+        "    pop r31",
+        "    pop r30",
+        "    pop r20",
+        "    ret",
+        "",
+        "; TRUE 16-BIT MULTIPLICATION: (r16:r17) * (r18:r19) -> (r16:r17)",
+        "; Implementa multiplicação completa 16x16 usando produtos parciais",
+        "; Resultado pode overflow - mantém apenas os 16 bits inferiores",
+        "multiply_int:",
+        "    push r0",
+        "    push r1",
+        "    push r20",
+        "    push r21",
+        "    push r22",
+        "    push r23",
+        "    ",
+        "    ; 16x16 -> 32 bit multiplication using partial products",
+        "    ; (AH:AL) * (BH:BL) = AH*BH*65536 + (AH*BL + AL*BH)*256 + AL*BL",
+        "    ; r16:r17 = AL:AH (little endian)",
+        "    ; r18:r19 = BL:BH (little endian)",
+        "    ",
+        "    clr r20                ; Clear result accumulator",
+        "    clr r21",
+        "    clr r22", 
+        "    clr r23",
+        "    ",
+        "    ; AL * BL -> r21:r20",
+        "    mul r16, r18           ; AL * BL",
+        "    mov r20, r0            ; Store low byte",
+        "    mov r21, r1            ; Store high byte",
+        "    ",
+        "    ; AL * BH -> add to r22:r21",
+        "    mul r16, r19           ; AL * BH", 
+        "    add r21, r0            ; Add to middle bytes",
+        "    adc r22, r1",
+        "    ",
+        "    ; AH * BL -> add to r22:r21",
+        "    mul r17, r18           ; AH * BL",
+        "    add r21, r0            ; Add to middle bytes",
+        "    adc r22, r1",
+        "    ",
+        "    ; AH * BH -> add to r23:r22 (but we'll ignore high overflow)",
+        "    mul r17, r19           ; AH * BH",
+        "    add r22, r0            ; Add to high bytes (ignore carry out)",
+        "    ",
+        "    ; Store result in r16:r17 (keep only lower 16 bits)",
+        "    mov r16, r20           ; Low byte of result",
+        "    mov r17, r21           ; High byte of result",
+        "    ",
+        "    ; Clear multiplication result registers",
+        "    clr r0",
+        "    clr r1",
+        "    ",
+        "    pop r23",
+        "    pop r22",
+        "    pop r21", 
+        "    pop r20",
+        "    pop r1",
+        "    pop r0",
+        "    ret",
+        "",
+        "; TRUE 16-BIT DIVISION: (r16:r17) / (r18:r19) -> quotient in (r16:r17)",
+        "; Implementa divisão longa completa para máxima precisão",
+        "divide_int:",
+        "    push r20",
+        "    push r21",
+        "    push r22",
+        "    push r23",
+        "    push r24",
+        "    ",
+        "    ; Check for division by zero",
+        "    cp r18, r1             ; Compare divisor with 0",
+        "    cpc r19, r1",
+        "    breq div_by_zero       ; If divisor is 0, return maximum value",
+        "    ",
+        "    ; Initialize: r22:r23 = quotient, r20:r21 = remainder",
+        "    clr r22                ; Quotient = 0",
+        "    clr r23",
+        "    mov r20, r16           ; Remainder = dividend",
+        "    mov r21, r17",
+        "    clr r16                ; Clear dividend (will become quotient)",
+        "    clr r17",
+        "    ",
+        "    ; Loop counter for 16 bits",
+        "    ldi r24, 16",
+        "    ",
+        "div_loop:",
+        "    ; Shift quotient left",
+        "    lsl r22",
+        "    rol r23",
+        "    ",
+        "    ; Shift remainder left",
+        "    lsl r20",
+        "    rol r21",
+        "    ",
+        "    ; Subtract divisor from remainder if possible",
+        "    cp r20, r18            ; Compare remainder with divisor",
+        "    cpc r21, r19",
+        "    brlo div_no_sub        ; If remainder < divisor, skip subtraction",
+        "    ",
+        "    ; Subtract divisor from remainder",
+        "    sub r20, r18",
+        "    sbc r21, r19",
+        "    ",
+        "    ; Set bit 0 of quotient",
+        "    ori r22, 1",
+        "    ",
+        "div_no_sub:",
+        "    dec r24",
+        "    brne div_loop          ; Continue for all 16 bits",
+        "    ",
+        "    ; Store quotient in result registers",
+        "    mov r16, r22",
+        "    mov r17, r23",
+        "    rjmp div_done",
+        "    ",
+        "div_by_zero:",
+        "    ldi r16, 0xFF          ; Return maximum value on division by zero",
+        "    ldi r17, 0xFF",
+        "    ",
+        "div_done:",
+        "    pop r24",
+        "    pop r23",
+        "    pop r22",
+        "    pop r21",
+        "    pop r20",
+        "    ret",
+        "",
+        "; TRUE 16-BIT MODULO: (r16:r17) % (r18:r19) -> remainder in (r16:r17)",
+        "; Implementa operação módulo completa usando divisão longa",
+        "modulo_int:",
+        "    push r20",
+        "    push r21",
+        "    push r22",
+        "    push r23", 
+        "    push r24",
+        "    ",
+        "    ; Check for division by zero",
+        "    cp r18, r1",
+        "    cpc r19, r1",
+        "    breq mod_by_zero",
+        "    ",
+        "    ; Initialize: r20:r21 = remainder",
+        "    mov r20, r16           ; Remainder = dividend",
+        "    mov r21, r17",
+        "    ",
+        "    ; Loop counter for 16 bits", 
+        "    ldi r24, 16",
+        "    ",
+        "mod_loop:",
+        "    ; Shift remainder left",
+        "    lsl r20",
+        "    rol r21",
+        "    ",
+        "    ; Subtract divisor from remainder if possible",
+        "    cp r20, r18",
+        "    cpc r21, r19",
+        "    brlo mod_no_sub",
+        "    ",
+        "    sub r20, r18",
+        "    sbc r21, r19",
+        "    ",
+        "mod_no_sub:",
+        "    dec r24",
+        "    brne mod_loop",
+        "    ",
+        "    ; Store remainder in result",
+        "    mov r16, r20",
+        "    mov r17, r21",
+        "    rjmp mod_done",
+        "    ",
+        "mod_by_zero:",
+        "    ; Return dividend unchanged on mod by zero",
+        "    ; (r16:r17 already contains dividend)",
+        "    ",
+        "mod_done:",
+        "    pop r24",
+        "    pop r23",
+        "    pop r22", 
+        "    pop r21",
+        "    pop r20",
+        "    ret",
+        "",
+        "; 16-BIT POWER: (r16:r17) ^ (r18:r19) -> result in (r16:r17)",
+        "; Implementa exponenciação com verificação de overflow",
+        "power_int:",
+        "    push r20",
+        "    push r21",
+        "    push r22",
+        "    push r23",
+        "    ",
+        "    ; Check for exponent = 0",
+        "    cp r18, r1             ; Compare exponent with 0",
+        "    cpc r19, r1",
+        "    brne pow_not_zero",
+        "    ldi r16, 1             ; x^0 = 1",
+        "    clr r17",
+        "    rjmp pow_done",
+        "    ",
+        "pow_not_zero:",
+        "    ; Check for exponent = 1",
+        "    cpi r18, 1",
+        "    ldi r20, 0",
+        "    cpc r19, r20",
+        "    breq pow_done          ; x^1 = x (already in r16:r17)",
+        "    ",
+        "    ; Save base in r20:r21",
+        "    mov r20, r16",
+        "    mov r21, r17",
+        "    ",
+        "    ; Initialize result to base (first multiplication)",
+        "    ; r22:r23 = exponent counter",
+        "    mov r22, r18",
+        "    mov r23, r19", 
+        "    dec r22                ; Decrement exponent (already have base)",
+        "    sbc r23, r1            ; Handle borrow",
+        "    ",
+        "pow_loop:",
+        "    ; Check if exponent counter is 0",
+        "    cp r22, r1",
+        "    cpc r23, r1",
+        "    breq pow_done",
+        "    ",
+        "    ; Multiply current result by base",
+        "    ; Move base to r18:r19 for multiplication",
+        "    mov r18, r20",
+        "    mov r19, r21",
+        "    rcall multiply_int     ; r16:r17 = r16:r17 * r18:r19",
+        "    ",
+        "    ; Decrement exponent counter",
+        "    dec r22",
+        "    sbc r23, r1",
+        "    rjmp pow_loop",
+        "    ",
+        "pow_done:",
+        "    pop r23",
+        "    pop r22",
+        "    pop r21",
+        "    pop r20", 
+        "    ret",
+        "",
+        "; Comando MEM - armazena resultado no topo da pilha",
+        "comando_mem:",
+        "    ; TODO: Implementação para armazenar em variáveis A-Z",
+        "    ret",
+        "",
+        "; Comando RES - recupera valor da memória",
+        "comando_res:",
+        "    ; TODO: Implementação para recuperar de variáveis A-Z",
+        "    ret",
+        "",
+        "; Carrega variável da memória",
+        "load_var:",
+        "    ; r17 contém o índice da variável (0-25)",
+        "    ; TODO: Implementação para carregar variável A-Z",
+        "    ret",
+        "",
+        "; Envia resultado via UART",
+        "send_result:",
+        "    ; Debug message",
+        "    ldi r16, 'R'",
+        "    rcall uart_transmit",
+        "    ldi r16, ':'",
+        "    rcall uart_transmit",
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
+        "    ",
+        "    rcall stack_pop_int      ; Pega resultado do topo",
+        "    ; Converte para ASCII e envia",
+        "    rcall send_number_16bit",
+        "    ; Envia newline",
+        "    ldi r16, 13",
+        "    rcall uart_transmit",
+        "    ldi r16, 10", 
+        "    rcall uart_transmit",
+        "    ret",
+        "",
+        "; CONVERSÃO 16-BIT PARA ASCII: Converte (r16:r17) para string decimal",
+        "; Suporte completo para valores de 0 a 65535",
+        "send_number_16bit:",
+        "    push r18",
+        "    push r19",
+        "    push r20",
+        "    push r21",
+        "    push r22",
+        "    push r23",
+        "    push r30",
+        "    push r31",
+        "    ",
+        "    ; Check for zero",
+        "    cp r16, r1",
+        "    cpc r17, r1",
+        "    brne not_zero_16",
+        "    ldi r16, '0'",
+        "    rcall uart_transmit",
+        "    rjmp send_16_done",
+        "    ",
+        "not_zero_16:",
+        "    ; Use repeated division by 10 to extract digits",
+        "    ; Store digits in a buffer and then send in reverse order",
+        "    ldi r30, lo8(0x0500)    ; Point to digit buffer in SRAM",
+        "    ldi r31, hi8(0x0500)",
+        "    clr r22                 ; Digit counter",
+        "    ",
+        "extract_digits:",
+        "    ; Divide by 10: r16:r17 / 10 -> quotient in r16:r17, remainder in r20",
+        "    ldi r18, 10",
+        "    clr r19",
+        "    rcall divide_by_10_16bit    ; Special optimized division by 10",
+        "    ",
+        "    ; Convert remainder to ASCII and store",
+        "    mov r20, r18               ; Remainder is returned in r18",
+        "    ldi r21, '0'",
+        "    add r20, r21               ; Convert to ASCII",
+        "    st Z+, r20                 ; Store digit and increment pointer",
+        "    inc r22                    ; Increment digit count",
+        "    ",
+        "    ; Check if quotient is zero",
+        "    cp r16, r1",
+        "    cpc r17, r1",
+        "    brne extract_digits        ; Continue if not zero",
+        "    ",
+        "    ; Now send digits in reverse order",
+        "    ; Z now points one past the last digit, so decrement first",
+        "    ",
+        "send_digits:",
+        "    dec r30                    ; Move to previous digit",
+        "    ld r16, Z                  ; Load digit",
+        "    rcall uart_transmit        ; Send it",
+        "    dec r22                    ; Decrement counter",
+        "    brne send_digits           ; Continue until all sent",
+        "    ",
+        "send_16_done:",
+        "    pop r31",
+        "    pop r30",
+        "    pop r23",
+        "    pop r22",
+        "    pop r21",
+        "    pop r20",
+        "    pop r19",
+        "    pop r18",
+        "    ret",
+        "",
+        "; DIVISÃO OTIMIZADA POR 10 para números 16-bit",
+        "; Input: r16:r17 = dividend",
+        "; Output: r16:r17 = quotient, r18 = remainder",
+        "divide_by_10_16bit:",
+        "    push r19",
+        "    push r20",
+        "    push r21",
+        "    ",
+        "    ; Save original value for remainder calculation",
+        "    mov r20, r16",
+        "    mov r21, r17",
+        "    ",
+        "    ; Simple approach: repeated subtraction by 10",
+        "    ; This is slower but accurate and simple for embedded systems",
+        "    clr r18                    ; Quotient counter",
+        "    clr r19",
+        "    ",
+        "div10_loop:",
+        "    ; Check if we can subtract 10",
+        "    cpi r16, 10",
+        "    cpc r17, r1                ; Compare with zero register",
+        "    brlo div10_remainder       ; If < 10, we're done",
+        "    ",
+        "    ; Subtract 10",
+        "    subi r16, 10",
+        "    sbci r17, 0",
+        "    ",
+        "    ; Increment quotient",
+        "    inc r18",
+        "    brne div10_check_carry",
+        "    inc r19                    ; Handle 16-bit quotient overflow",
+        "    ",
+        "div10_check_carry:",
+        "    rjmp div10_loop",
+        "    ",
+        "div10_remainder:",
+        "    ; r18:r19 = quotient, r16 = remainder",
+        "    mov r20, r16               ; Save remainder",
+        "    mov r16, r18               ; Quotient to r16:r17",
+        "    mov r17, r19",
+        "    mov r18, r20               ; Remainder to r18",
+        "    ",
+        "    pop r21",
+        "    pop r20",
+        "    pop r19",
+        "    ret",
+        "",
+        "; Keep the original send_number for compatibility",
+        "send_number:",
+        "    rcall send_number_16bit",
+        "    ret",
+        "",
+        "; ENVIA BYTE COMO HEXADECIMAL (r16) - para debug",
+        "; Converte um byte para dois dígitos hexadecimais",
+        "send_byte_as_hex:",
+        "    push r17",
+        "    push r18",
+        "    ",
+        "    ; Salvar byte original",
+        "    mov r18, r16",
+        "    ",
+        "    ; Enviar nibble alto (bits 7-4)",
+        "    swap r16                   ; Trocar nibbles",
+        "    andi r16, 0x0F            ; Manter apenas nibble baixo",
+        "    cpi r16, 10",
+        "    brlo hex_digit_0_9_high   ; Se < 10, é dígito 0-9",
+        "    subi r16, -55             ; Converter para A-F (10-15 -> 65-70)",
+        "    rjmp send_high_nibble",
+        "hex_digit_0_9_high:",
+        "    subi r16, -48             ; Converter para 0-9 (0-9 -> 48-57)",
+        "send_high_nibble:",
+        "    rcall uart_transmit",
+        "    ",
+        "    ; Enviar nibble baixo (bits 3-0)",  
+        "    mov r16, r18              ; Restaurar byte original",
+        "    andi r16, 0x0F            ; Manter apenas nibble baixo",
+        "    cpi r16, 10",
+        "    brlo hex_digit_0_9_low    ; Se < 10, é dígito 0-9",
+        "    subi r16, -55             ; Converter para A-F",
+        "    rjmp send_low_nibble",
+        "hex_digit_0_9_low:",
+        "    subi r16, -48             ; Converter para 0-9",
+        "send_low_nibble:",
+        "    rcall uart_transmit",
+        "    ",
+        "    pop r18",
+        "    pop r17",
+        "    ret",
+        "",
+        "; Transmite caractere via UART",
+        "uart_transmit:",
+        "    push r22",
+        "wait_transmit2:",
+        "    lds r22, UCSR0A",
+        "    sbrs r22, UDRE0",
+        "    rjmp wait_transmit2",
+        "    sts UDR0, r16",
+        "    pop r22",
+        "    ret",
+        ""
+    ]
+    codigo.extend(rotinas)
+
+
+# ====================================================================
+# FUNÇÃO DE TESTE - 16-BIT VERSION
+# ====================================================================
+
 if __name__ == "__main__":
-    # Teste básico com tokens simples
-    tokens_teste = ["5", "2", "+"]  # 5 + 2 = 7 
+    print("=" * 70)
+    print("TESTANDO gerarAssembly() - TRUE 16-BIT VERSION")
+    print("Suporte completo para inteiros de 0 a 65535")
+    print("=" * 70)
+    print()
+    
+    # Teste com números maiores para demonstrar capacidade 16-bit
+    test_cases = [
+        (["1000", "2000", "+"], "1000 + 2000 = 3000"),
+        (["300", "200", "*"], "300 * 200 = 60000"),  
+        (["65000", "100", "/"], "65000 / 100 = 650"),
+        (["12345", "678", "+"], "12345 + 678 = 13023"),
+        (["255", "256", "*"], "255 * 256 = 65280"),
+        (["1000", "7", "^"], "1000 ^ 7 = overflow (mas teste interessante)")
+    ]
+    
+    #for i, (tokens, description) in enumerate(test_cases):
+    #    print(f"Teste {i+1}: {description}")
+    #    print(f"Expressão RPN: {' '.join(tokens)}")
+    #    
+    #    codigo_assembly = []
+    #    gerarAssembly(tokens, codigo_assembly)
+        
+        # Salva o arquivo para este teste específico
+    #    filename = f"programa_test_{i+1}.S"
+    #    save_assembly(codigo_assembly, filename)
+    #    print(f"Arquivo gerado: {filename}")
+    #    print()
+    
+    # Gerar o arquivo principal com um teste padrão
+    tokens_padrao = ["2", "13", "^"]
     codigo_assembly = []
-    
-    print("Testando gerarAssembly()...")
-    print(f"Expressão RPN: {' '.join(tokens_teste)} (resultado esperado: 7)")
-    
-    gerarAssembly(tokens_teste, codigo_assembly)
-    
-    # Salva o arquivo
-    save_assembly(codigo_assembly, "asm_main.S")
+    gerarAssembly(tokens_padrao, codigo_assembly)
+    save_assembly(codigo_assembly, "programa.S")
     save_registers_inc("registers.inc")
+    
+    
+    
+    
+    print("Para testar, compile e carregue qualquer arquivo programa_test_X.S")
+    print("Monitore a saída serial em 9600 baud para ver os resultados!")
