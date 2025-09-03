@@ -210,7 +210,7 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
                 if 0 < n <= len(historico_resultados):
                     pilha.append(str(historico_resultados[-n]))
                 else:
-                    print(f"-> Erro: Índice N={n} inválido para RES.")
+                    print(f"-> Erro: Índice N={n} fora de alcance.")
                     pilha.append('0.0')
             except ValueError:
                 print(f"-> Erro: O valor '{n_str}' não é válido para RES.")
@@ -1574,11 +1574,7 @@ if __name__ == "__main__":
     exibirResultados(operacoes_lidas)
     print("\n--- FIM DOS TESTES ---\n")
 
-    print("=" * 70)
-    print("TESTANDO gerarAssembly() - TRUE 16-BIT VERSION")
-    print("Suporte completo para inteiros de 0 a 65535")
-    print("=" * 70)
-    print()
+    # Geração de código assembly para cada linha de operações
 
     codigo_assembly = []
     linhas = lerArquivos("tokens_gerados.txt")
