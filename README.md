@@ -24,4 +24,4 @@ Ele permite:
 - Gerar um arquivo **`tokens_gerados.txt`** com os tokens das últimas 10 execuções.
 
   # Rodar programa
-  Para rodar o programa digite o seguinte comando no terminal `.\python rpn_calc.py` seguido do arquivos de teste `teste1.txt`
+  Para rodar o programa digite o seguinte comando no terminal `.\python rpn_calc.py` seguido do arquivos de teste `teste1_assembly.txt`
