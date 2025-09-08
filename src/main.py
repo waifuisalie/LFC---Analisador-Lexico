@@ -4,7 +4,7 @@ from pathlib import Path
 
 from functions.rpn_calc import parseExpressao, executarExpressao
 from functions.io_utils import lerArquivo, salvar_tokens
-from functions.gerar_assembly import gerarAssembly, save_assembly, save_registers_inc
+from functions.assembly import gerarAssembly, save_assembly, save_registers_inc
 
 # --- caminhos base do projeto ---
 BASE_DIR    = Path(__file__).resolve().parents[1]        # raiz do repo

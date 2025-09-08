@@ -1,6 +1,6 @@
 ; ====================================================================
 ; Código Assembly gerado automaticamente para Arduino Uno (ATmega328p)
-; Processador de expressões RPN (Reverse Polish Notation) - 16-BIT VERSION
+; Processador RPN - 16-BIT VERSION
 ; Suporte para inteiros de 0 a 65535
 ; Compilado com PlatformIO/AVR-GCC
 ; ====================================================================
@@ -14,13 +14,9 @@
 ; SEÇÃO DE DADOS - 16-BIT VERSION
 ; ====================================================================
 
-; Stack pointer para pilha de inteiros 16-bit (simula pilha RPN)
-; Cada entrada da pilha ocupa 2 bytes (16 bits)
-; Memória SRAM para armazenar resultados e variáveis
-
 .section .data
 stack_ptr: .byte 1        ; Ponteiro da pilha RPN
-mem_vars:  .space 52      ; Espaço para 26 variáveis de 16-bit (A-Z)
+mem_vars:  .space 52      ; 26 variáveis 16-bit (A-Z)
 temp_result: .space 4     ; Resultado temporário
 
 .section .text
@@ -36,10 +32,8 @@ main:
     ldi r16, 0x08
     out SPH, r16
 
-    ; Inicializar UART para debug (9600 baud)
+    ; Inicializar UART (9600 baud) e pilha RPN
     rcall uart_init
-
-    ; Inicializar pilha RPN
     rcall stack_init
 
     ; Processar expressão RPN
@@ -76,7 +70,7 @@ processar_rpn:
     rcall uart_transmit
 
     ; Processando token 0: 'MEM'
-    rcall comando_mem     ; Comando MEM
+    rcall comando_mem
 
     ; Fim do processamento
     ret

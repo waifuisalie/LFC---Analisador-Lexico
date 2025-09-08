@@ -1,6 +1,6 @@
 ; ====================================================================
 ; Código Assembly gerado automaticamente para Arduino Uno (ATmega328p)
-; Processador de expressões RPN (Reverse Polish Notation) - 16-BIT VERSION
+; Processador RPN - 16-BIT VERSION
 ; Suporte para inteiros de 0 a 65535
 ; Compilado com PlatformIO/AVR-GCC
 ; ====================================================================
@@ -14,13 +14,9 @@
 ; SEÇÃO DE DADOS - 16-BIT VERSION
 ; ====================================================================
 
-; Stack pointer para pilha de inteiros 16-bit (simula pilha RPN)
-; Cada entrada da pilha ocupa 2 bytes (16 bits)
-; Memória SRAM para armazenar resultados e variáveis
-
 .section .data
 stack_ptr: .byte 1        ; Ponteiro da pilha RPN
-mem_vars:  .space 52      ; Espaço para 26 variáveis de 16-bit (A-Z)
+mem_vars:  .space 52      ; 26 variáveis 16-bit (A-Z)
 temp_result: .space 4     ; Resultado temporário
 
 .section .text
@@ -36,10 +32,8 @@ main:
     ldi r16, 0x08
     out SPH, r16
 
-    ; Inicializar UART para debug (9600 baud)
+    ; Inicializar UART (9600 baud) e pilha RPN
     rcall uart_init
-
-    ; Inicializar pilha RPN
     rcall stack_init
 
     ; Processar expressão RPN
@@ -57,7 +51,7 @@ main:
 
 processar_rpn:
     ; Processando expressão RPN com suporte 16-bit:
-    ; Expressão: 3 3 ^
+    ; Expressão: 7 2 %
 
     ; Debug: Enviar mensagem inicial
     ldi r16, 'S'
@@ -75,72 +69,72 @@ processar_rpn:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '3'
-    ; Debug: Enviar "P3"
+    ; Processando token 0: '7'
+    ; Debug: Enviar "P7"
     ldi r16, 'P'
     rcall uart_transmit
-    ldi r16, '3'
+    ldi r16, '7'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
 
-    ldi r16, 3      ; Byte baixo do valor 3
-    ldi r17, 0 ; Byte alto do valor 3
-    rcall stack_push_int         ; Empilha valor inteiro 16-bit
+    ldi r16, 7      ; Byte baixo
+    ldi r17, 0 ; Byte alto
+    rcall stack_push_int
 
-    ; Processando token 1: '3'
-    ; Debug: Enviar "P3"
+    ; Processando token 1: '2'
+    ; Debug: Enviar "P2"
     ldi r16, 'P'
     rcall uart_transmit
-    ldi r16, '3'
+    ldi r16, '2'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
 
-    ldi r16, 3      ; Byte baixo do valor 3
-    ldi r17, 0 ; Byte alto do valor 3
-    rcall stack_push_int         ; Empilha valor inteiro 16-bit
+    ldi r16, 2      ; Byte baixo
+    ldi r17, 0 ; Byte alto
+    rcall stack_push_int
 
-    ; Processando token 2: '^'
-    ; Debug: Enviar "POW"
-    ldi r16, 'P'
+    ; Processando token 2: '%'
+    ; Debug: Enviar "MOD"
+    ldi r16, 'M'
     rcall uart_transmit
     ldi r16, 'O'
     rcall uart_transmit
-    ldi r16, 'W'
+    ldi r16, 'D'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
 
-    rcall stack_pop_int      ; Remove expoente
-    push r16                 ; Salvar r16 antes do debug
-    push r17                 ; Salvar r17 antes do debug
+    rcall stack_pop_int      ; divisor
+    push r16
+    push r17
     rcall send_number_16bit
     ldi r16, ' '
     rcall uart_transmit
-    pop r17                  ; Restaurar r17
-    pop r16                  ; Restaurar r16
-    mov r18, r16             ; Move expoente para r18:r19
+    pop r17
+    pop r16
+    mov r18, r16
     mov r19, r17
-    rcall stack_pop_int      ; Remove base
-    push r16                 ; Salvar r16 antes do debug
-    push r17                 ; Salvar r17 antes do debug
+    rcall stack_pop_int      ; dividendo
+    push r16
+    push r17
     rcall send_number_16bit
     ldi r16, ' '
     rcall uart_transmit
-    pop r17                  ; Restaurar r17
-    pop r16                  ; Restaurar r16
-    rcall power_int          ; TRUE 16-bit power
-    push r16                 ; Salvar resultado
+    pop r17
+    pop r16
+    rcall modulo_int
+    push r16
     push r17
     rcall send_number_16bit
     ldi r16, 13
     rcall uart_transmit
     ldi r16, 10
     rcall uart_transmit
-    pop r17                  ; Restaurar resultado
+    pop r17
     pop r16
-    rcall stack_push_int     ; Empilha resultado
+    rcall stack_push_int
 
     ; Fim do processamento
     ret
