@@ -36,7 +36,7 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
                 elif valor_token == '/':
                     if v2 == 0: raise ZeroDivisionError("Divisão por zero.")
                     resultado = v1 / v2
-                elif valor_token == '%': resultado = int(v1) % int(v2)
+                elif valor_token == '%': resultado = v1 % v2
                 elif valor_token == '^': resultado = math.pow(v1, v2)
                 pilha.append(str(arredondar_16bit(resultado)))
             except (ZeroDivisionError, ValueError) as e:
