@@ -159,18 +159,116 @@ def _gerar_processamento_operacao(codigo: list[str], tokens: list[str], op_numbe
     codigo.append(f"    ; Expressão: {token_str}")
     codigo.append("")
 
-    # Mensagem inicial de debug
+    # Cabeçalho estético da operação
     codigo.extend([
-        f"    ; Debug: Enviar mensagem inicial da operação {op_number}",
+        f"    ; Cabeçalho da operação {op_number}",
+        "    ldi r16, 13",
+        "    rcall uart_transmit",
+        "    ldi r16, 10",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
         "    ldi r16, 'O'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'P'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'E'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'R'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'A'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'C'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'A'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'O'",
+        "    rcall uart_transmit",
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
+    ])
+    
+    # Enviar número da operação
+    if op_number < 10:
+        codigo.extend([
+            f"    ldi r16, '{op_number}'",
+            "    rcall uart_transmit",
+        ])
+    else:
+        codigo.extend([
+            f"    ldi r16, '1'",
+            "    rcall uart_transmit",
+            f"    ldi r16, '0'",
+            "    rcall uart_transmit",
+        ])
+    
+    codigo.extend([
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, '='",
+        "    rcall uart_transmit",
+        "    ldi r16, 13",
+        "    rcall uart_transmit",
+        "    ldi r16, 10",
+        "    rcall uart_transmit",
+        "",
+        "    ; Mostrar expressão",
+        "    ldi r16, 'E'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'x'",
         "    rcall uart_transmit",
         "    ldi r16, 'p'",
         "    rcall uart_transmit",
-        f"    ldi r16, '{op_number if op_number < 10 else 'X'}'",
+        "    ldi r16, 'r'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'e'",
+        "    rcall uart_transmit",
+        "    ldi r16, 's'",
+        "    rcall uart_transmit",
+        "    ldi r16, 's'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'a'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'o'",
         "    rcall uart_transmit",
         "    ldi r16, ':'",
         "    rcall uart_transmit",
         "    ldi r16, ' '",
+        "    rcall uart_transmit",
+        ""
+    ])
+    
+    # Enviar a expressão caractere por caractere
+    for char in token_str:
+        if char == ' ':
+            codigo.extend([
+                "    ldi r16, ' '",
+                "    rcall uart_transmit",
+            ])
+        elif char.isalnum() or char in "+-*/%^()":
+            codigo.extend([
+                f"    ldi r16, '{char}'",
+                "    rcall uart_transmit",
+            ])
+    
+    codigo.extend([
+        "    ldi r16, 13",
+        "    rcall uart_transmit",
+        "    ldi r16, 10",
         "    rcall uart_transmit",
         ""
     ])
@@ -204,7 +302,32 @@ def _gerar_processamento_operacao(codigo: list[str], tokens: list[str], op_numbe
         else:
             codigo.extend([f"    ; Token desconhecido: {token}", ""])
 
+    # Cabeçalho do resultado
     codigo.extend([
+        "    ; Mostrar resultado",
+        "    ldi r16, 'R'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'e'",
+        "    rcall uart_transmit",
+        "    ldi r16, 's'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'u'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'l'",
+        "    rcall uart_transmit",
+        "    ldi r16, 't'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'a'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'd'",
+        "    rcall uart_transmit",
+        "    ldi r16, 'o'",
+        "    rcall uart_transmit",
+        "    ldi r16, ':'",
+        "    rcall uart_transmit",
+        "    ldi r16, ' '",
+        "    rcall uart_transmit",
+        "",
         "    ; Fim do processamento da operação",
         "    ret",
         "",
