@@ -1,4 +1,3 @@
-
 from typing import List
 
 def _gerar_rotinas_auxiliares(codigo):

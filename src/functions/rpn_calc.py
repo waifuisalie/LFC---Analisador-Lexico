@@ -24,7 +24,7 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
 
         if valor_token in ['+', '-', '*', '/', '%', '^']:
             if len(pilha) < 2:
-                print(f"-> Erro: tokens insuficientes para o operador '{valor_token}'")
+                print(f"ERRO -> Tokens insuficientes para o operador '{valor_token}'")
                 continue
             v2_str, v1_str = pilha.pop(), pilha.pop()
             resultado = 0.0
@@ -34,18 +34,19 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
                 elif valor_token == '-': resultado = v1 - v2
                 elif valor_token == '*': resultado = v1 * v2
                 elif valor_token == '/':
-                    if v2 == 0: raise ZeroDivisionError("Divisão por zero.")
+                    if v2 == 0:
+                        raise ZeroDivisionError("ERRO -> Operação de divisão por zero não é permitida.")
                     resultado = v1 / v2
                 elif valor_token == '%': resultado = v1 % v2
                 elif valor_token == '^': resultado = math.pow(v1, v2)
                 pilha.append(str(arredondar_16bit(resultado)))
             except (ZeroDivisionError, ValueError) as e:
-                print(f"-> Erro de operação para '{valor_token}': {e}")
+                print(f"ERRO -> Operação de divisão para '{valor_token}': {e}")
                 pilha.append('0.0')
 
         elif token.tipo == Tipo_de_Token.RES:
             if len(pilha) == 0:
-                print("-> Erro: RES requer um índice numérico na pilha.")
+                print("ERRO -> RES requer um índice numérico na pilha.")
                 pilha.append('0.0'); continue
             n_str = pilha.pop()
             try:
@@ -53,10 +54,10 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
                 if 0 < n <= len(historico_resultados):
                     pilha.append(str(historico_resultados[-n]))
                 else:
-                    print(f"-> Erro: Índice N={n} fora de alcance.")
+                    print(f"ERRO -> Índice N={n} fora de alcance.")
                     pilha.append('0.0')
             except ValueError:
-                print(f"-> Erro: O valor '{n_str}' não é válido para RES.")
+                print(f"-ERRO -> O valor '{n_str}' não é válido para RES.")
                 pilha.append('0.0')
 
         elif token.tipo == Tipo_de_Token.MEM:
@@ -69,7 +70,7 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
                 valor = memoria.get('MEM', 0.0)
                 pilha.append(str(arredondar_16bit(valor)))
             else:
-                print("-> Erro: MEM não inicializado.")
+                print("ERRO -> MEM não inicializado.")
                 pilha.append('0.0')
 
         elif token.tipo == Tipo_de_Token.NUMERO_REAL:
@@ -80,5 +81,5 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
     if len(pilha) == 1:
         return arredondar_16bit(pilha[0])
     else:
-        print(f"-> Erro: {len(pilha)} itens na pilha: {pilha}")
+        print(f"ERRO -> {len(pilha)} itens na pilha: {pilha}")
         return arredondar_16bit(pilha[-1]) if pilha else 0.0
