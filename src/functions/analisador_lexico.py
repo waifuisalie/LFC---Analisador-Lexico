@@ -82,9 +82,7 @@ class Analisador_Lexico:
         while self.caractere is not None and self.caractere.isalpha():
             resultado += self.caractere
             self.avanca_ponteiro()
-        if resultado == "MEM":
-            return Token(Tipo_de_Token.MEM, resultado)
-        elif resultado == "RES":
+        if resultado == "RES":
             return Token(Tipo_de_Token.RES, resultado)
         else:
-            raise ValueError(f"Comando inválido: '{resultado}'")
+            return Token(Tipo_de_Token.MEM, resultado)

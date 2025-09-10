@@ -7,8 +7,7 @@ from .analisador_lexico import Analisador_Lexico
 def parseExpressao(linha_operacao: str):
     analisador_lexico = Analisador_Lexico(linha_operacao)
     tokens = analisador_lexico.analise()
-    # remove parênteses (mantém-se se quiser validar no futuro)
-    tokens = [t for t in tokens if t.tipo not in (Tipo_de_Token.ABRE_PARENTESES, Tipo_de_Token.FECHA_PARENTESES)]
+    # Mantém tokens com parênteses
     return tokens
 
 def arredondar_16bit(valor):
@@ -21,6 +20,9 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
         if token.tipo == Tipo_de_Token.FIM:
             continue
         valor_token = str(token.valor).upper()
+
+        if token.tipo == Tipo_de_Token.ABRE_PARENTESES or token.tipo == Tipo_de_Token.FECHA_PARENTESES:
+            continue
 
         if valor_token in ['+', '-', '*', '/', '%', '^']:
             if len(pilha) < 2:
@@ -63,13 +65,13 @@ def executarExpressao(tokens: list[Token], memoria: dict, historico_resultados: 
             if len(pilha) > 0 and pilha[-1].replace('.', '', 1).isdigit():
                 valor_para_armazenar_str = pilha.pop()
                 valor_float = float(valor_para_armazenar_str)
-                memoria['MEM'] = valor_float
+                memoria[token.valor] = valor_float
                 pilha.append(str(arredondar_16bit(valor_float)))
-            elif 'MEM' in memoria:
-                valor = memoria.get('MEM', 0.0)
+            elif token.valor in memoria:
+                valor = memoria.get(token.valor, 0.0)
                 pilha.append(str(arredondar_16bit(valor)))
             else:
-                print("-> Erro: MEM não inicializado.")
+                print("-> Erro: Variável do tipo MEM não inicializada.")
                 pilha.append('0.0')
 
         elif token.tipo == Tipo_de_Token.NUMERO_REAL:
