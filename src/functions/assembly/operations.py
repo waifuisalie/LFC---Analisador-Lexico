@@ -9,14 +9,16 @@ def is_number(token: str) -> bool:
     try:
         float(token)
         return True
-    except ValueError:
+    except ValueError as e:
+        print(f"Erro ao converter '{token}' para número: {e}")
         return False
 
 def is_integer(token: str) -> bool:
     try:
         val = float(token)
         return val == int(val)
-    except ValueError:
+    except ValueError as e:
+        print(f"Erro ao converter '{token}' para inteiro: {e}")
         return False
 
 def is_variable_mem(token: str) -> bool:
