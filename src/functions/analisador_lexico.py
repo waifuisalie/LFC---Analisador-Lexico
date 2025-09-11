@@ -60,7 +60,7 @@ class Analisador_Lexico:
         if token:
             self.avanca_ponteiro()
             return token
-        raise ValueError(f"Caractere inválido: '{self.caractere}'")
+        raise ValueError(f"ERRO -> Caractere inválido: '{self.caractere}'")
 
     def estado_numero(self):
         resultado = ""
@@ -71,7 +71,7 @@ class Analisador_Lexico:
             resultado += self.caractere
             self.avanca_ponteiro()
             if not (self.caractere and self.caractere.isdigit()):
-                raise ValueError("ERRO: espera-se dígito após o ponto decimal.")
+                raise ValueError("ERRO -> Espera-se dígito após o ponto decimal.")
             while self.caractere is not None and self.caractere.isdigit():
                 resultado += self.caractere
                 self.avanca_ponteiro()
