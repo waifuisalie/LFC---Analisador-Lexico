@@ -7,7 +7,7 @@ def lerArquivo(nomeArquivo: str):
         with open(nomeArquivo, 'r', encoding="utf-8") as arquivos_teste:
             return [linha.strip() for linha in arquivos_teste if linha.strip()]
     except FileNotFoundError:
-        print(f'-> Erro: Arquivo não encontrado: {nomeArquivo}')
+        print(f'ERRO -> Arquivo não encontrado: {nomeArquivo}')
         return []
 
 def salvar_tokens(tokens_por_linha, nome_arquivo="tokens_gerados.txt"):
@@ -22,5 +22,5 @@ def salvar_tokens(tokens_por_linha, nome_arquivo="tokens_gerados.txt"):
                 f.write(" ".join(lista_de_tokens) + "\n")
         return True
     except Exception as e:
-        print(f'Erro ao escrever os tokens no arquivo {e}')
+        print(f'ERRO -> Falha ao escrever os tokens no arquivo {e}')
         return False

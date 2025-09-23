@@ -37,7 +37,7 @@ def exibirResultados(vetor_linhas: list[str]) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Erro: Especificar caminho do arquivo de teste (ex.: int/teste1.txt ou float/teste2.txt)")
+        print("ERRO -> Especificar caminho do arquivo de teste (ex.: int/teste1.txt ou float/teste2.txt)")
         sys.exit(1)
 
     # --- resolve caminho da entrada ---
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         entrada = (INPUTS_DIR / arg).resolve()
 
     if not entrada.exists():
-        print(f"Erro: arquivo não encontrado: {entrada}")
+        print(f"ERRO -> arquivo não encontrado: {entrada}")
         sys.exit(1)
 
     operacoes_lidas = lerArquivo(str(entrada))
@@ -60,7 +60,9 @@ if __name__ == "__main__":
     try:
         mostrar = entrada.relative_to(BASE_DIR)
     except ValueError:
+        print("AVISO -> Não foi possível exibir o caminho relativo ao diretório base. Exibindo caminho absoluto.")
         mostrar = entrada
+        
     print(f"\nArquivo de teste: {mostrar}\n")
 
     exibirResultados(operacoes_lidas)
