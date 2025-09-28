@@ -5,6 +5,7 @@ from pathlib import Path
 from functions.rpn_calc import parseExpressao, executarExpressao
 from functions.io_utils import lerArquivo, salvar_tokens
 from functions.assembly import gerarAssemblyMultiple, save_assembly, save_registers_inc
+from functions.tokens import Tipo_de_Token
 
 # --- caminhos base do projeto ---
 BASE_DIR    = Path(__file__).resolve().parents[1]        # raiz do repo
@@ -23,9 +24,9 @@ def exibirResultados(vetor_linhas: list[str]) -> None:
 
     for i, linha in enumerate(vetor_linhas, start=1):
         lista_de_tokens = parseExpressao(linha)
-        # para salvar tokens “limpos”
-        linhas_tokens_recebidos = linha.replace('(', '').replace(')', '').strip().split()
-        tokens_salvos_txt.append(linhas_tokens_recebidos)
+        # para salvar tokens completos (incluindo parênteses) para RA2
+        tokens_completos = [str(token.valor) for token in lista_de_tokens if token.tipo != Tipo_de_Token.FIM]
+        tokens_salvos_txt.append(tokens_completos)
 
         resultado = executarExpressao(lista_de_tokens, memoria_global, historico_global)
         if resultado is not None:
@@ -77,11 +78,13 @@ if __name__ == "__main__":
     # registers.inc e arquivo único .S em raiz/outputs/assembly
     save_registers_inc(str(OUT_ASM_DIR / "registers.inc"))
 
-    # Preparar lista de todas as operações
+    # Preparar lista de todas as operações (filtrar parênteses para assembly)
     all_tokens = []
     for linha in linhas:
         tokens = linha.split()
-        all_tokens.append(tokens)
+        # Filtrar parênteses apenas para geração de assembly (RA1 compatibility)
+        tokens_sem_parenteses = [token for token in tokens if token not in ['(', ')']]
+        all_tokens.append(tokens_sem_parenteses)
 
     # Gerar um único arquivo com todas as operações
     gerarAssemblyMultiple(all_tokens, codigo_assembly)

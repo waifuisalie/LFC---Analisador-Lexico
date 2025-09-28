@@ -1,0 +1,45 @@
+# Future Control Structures Test File - RA2
+# Based on PDF Section 11.2.3 and 11.7.3 requirements
+# Team must CREATE and DOCUMENT syntax for decision and loop structures
+# Must follow RPN postfix pattern within parentheses
+
+# Required new relational operator tokens (from PDF 11.7.3):
+# > < == != >= <= (examples to be tokenized)
+
+# Examples of expressions with relational operators (valid RPN):
+(5 3 >)
+(10 10 ==)
+(7 8 <)
+(A B !=)
+(X Y >=)
+(P Q <=)
+
+# Team-designed control structure examples (syntax to be defined by team)
+# These are placeholders following postfix pattern - actual syntax TBD:
+
+# Decision structure examples (postfix pattern):
+# Note: Team must design exact tokens and syntax
+(5 3 > 1 0 DECISION)
+(A B == (A 2 *) (B 3 +) DECISION)
+
+# Loop structure examples (postfix pattern):
+# Note: Team must design exact tokens and syntax
+(1 10 I (I 2 *) LOOP)
+(0 COUNT < ((COUNT 1 +) COUNT MEM) LOOP)
+
+# Combined relational and arithmetic (already working):
+((5 3 +) (4 2 *) >)
+((A B *) 0 !=)
+(((X 1 +) Y /) 1.5 >=)
+
+# Regular RPN expressions (working baseline):
+(5 3 +)
+(10 2 /)
+((1 2 +) (3 4 *) -)
+(7 MEM)
+(MEM 5 *)
+(3 RES)
+
+# NOTE: Control structure token names (DECISION, LOOP, etc.) are examples
+# The actual token names and syntax must be designed and documented by the team
+# following the PDF requirement: "postfix operators within parentheses"

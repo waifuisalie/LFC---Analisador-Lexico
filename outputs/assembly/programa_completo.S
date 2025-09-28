@@ -86,7 +86,7 @@ main:
 
 processar_rpn_op1:
     ; Processando operação 1 com suporte 16-bit:
-    ; Expressão: 3 2 +
+    ; Expressão: 3.0 2.0 +
 
     ; Cabeçalho da operação 1
     ldi r16, 13
@@ -164,9 +164,13 @@ processar_rpn_op1:
 
     ldi r16, '3'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '2'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -177,13 +181,13 @@ processar_rpn_op1:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '3'
+    ; Processando token 0: '3.0'
     ; Push 3 para a pilha
     ldi r16, 3      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '2'
+    ; Processando token 1: '2.0'
     ; Push 2 para a pilha
     ldi r16, 2      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -235,7 +239,7 @@ processar_rpn_op1:
 
 processar_rpn_op2:
     ; Processando operação 2 com suporte 16-bit:
-    ; Expressão: 10 4 -
+    ; Expressão: 10.0 4.0 -
 
     ; Cabeçalho da operação 2
     ldi r16, 13
@@ -315,9 +319,13 @@ processar_rpn_op2:
     rcall uart_transmit
     ldi r16, '0'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '4'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -328,13 +336,13 @@ processar_rpn_op2:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '10'
+    ; Processando token 0: '10.0'
     ; Push 10 para a pilha
     ldi r16, 10      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '4'
+    ; Processando token 1: '4.0'
     ; Push 4 para a pilha
     ldi r16, 4      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -386,7 +394,7 @@ processar_rpn_op2:
 
 processar_rpn_op3:
     ; Processando operação 3 com suporte 16-bit:
-    ; Expressão: 2 3 *
+    ; Expressão: 2.0 3.0 *
 
     ; Cabeçalho da operação 3
     ldi r16, 13
@@ -464,9 +472,13 @@ processar_rpn_op3:
 
     ldi r16, '2'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '3'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -477,13 +489,13 @@ processar_rpn_op3:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '2'
+    ; Processando token 0: '2.0'
     ; Push 2 para a pilha
     ldi r16, 2      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '3'
+    ; Processando token 1: '3.0'
     ; Push 3 para a pilha
     ldi r16, 3      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -534,7 +546,7 @@ processar_rpn_op3:
 
 processar_rpn_op4:
     ; Processando operação 4 com suporte 16-bit:
-    ; Expressão: 9 2 /
+    ; Expressão: 9.0 2.0 /
 
     ; Cabeçalho da operação 4
     ldi r16, 13
@@ -612,9 +624,13 @@ processar_rpn_op4:
 
     ldi r16, '9'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '2'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -625,13 +641,13 @@ processar_rpn_op4:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '9'
+    ; Processando token 0: '9.0'
     ; Push 9 para a pilha
     ldi r16, 9      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '2'
+    ; Processando token 1: '2.0'
     ; Push 2 para a pilha
     ldi r16, 2      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -682,7 +698,7 @@ processar_rpn_op4:
 
 processar_rpn_op5:
     ; Processando operação 5 com suporte 16-bit:
-    ; Expressão: 10 3 %
+    ; Expressão: 10.0 3.0 %
 
     ; Cabeçalho da operação 5
     ldi r16, 13
@@ -762,9 +778,13 @@ processar_rpn_op5:
     rcall uart_transmit
     ldi r16, '0'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '3'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -775,13 +795,13 @@ processar_rpn_op5:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '10'
+    ; Processando token 0: '10.0'
     ; Push 10 para a pilha
     ldi r16, 10      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '3'
+    ; Processando token 1: '3.0'
     ; Push 3 para a pilha
     ldi r16, 3      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -832,7 +852,7 @@ processar_rpn_op5:
 
 processar_rpn_op6:
     ; Processando operação 6 com suporte 16-bit:
-    ; Expressão: 2 3 ^
+    ; Expressão: 2.0 3.0 ^
 
     ; Cabeçalho da operação 6
     ldi r16, 13
@@ -910,9 +930,13 @@ processar_rpn_op6:
 
     ldi r16, '2'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '3'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -923,13 +947,13 @@ processar_rpn_op6:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '2'
+    ; Processando token 0: '2.0'
     ; Push 2 para a pilha
     ldi r16, 2      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '3'
+    ; Processando token 1: '3.0'
     ; Push 3 para a pilha
     ldi r16, 3      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -980,7 +1004,7 @@ processar_rpn_op6:
 
 processar_rpn_op7:
     ; Processando operação 7 com suporte 16-bit:
-    ; Expressão: 1 2 + 3 4 * /
+    ; Expressão: 1.0 2.0 + 3.0 4.0 * /
 
     ; Cabeçalho da operação 7
     ldi r16, 13
@@ -1058,9 +1082,13 @@ processar_rpn_op7:
 
     ldi r16, '1'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '2'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -1070,9 +1098,13 @@ processar_rpn_op7:
     rcall uart_transmit
     ldi r16, '3'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, '4'
+    rcall uart_transmit
+    ldi r16, '0'
     rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
@@ -1087,13 +1119,13 @@ processar_rpn_op7:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '1'
+    ; Processando token 0: '1.0'
     ; Push 1 para a pilha
     ldi r16, 1      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 1: '2'
+    ; Processando token 1: '2.0'
     ; Push 2 para a pilha
     ldi r16, 2      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -1112,13 +1144,13 @@ processar_rpn_op7:
 
     rcall stack_push_int
 
-    ; Processando token 3: '3'
+    ; Processando token 3: '3.0'
     ; Push 3 para a pilha
     ldi r16, 3      ; Byte baixo
     ldi r17, 0 ; Byte alto
     rcall stack_push_int
 
-    ; Processando token 4: '4'
+    ; Processando token 4: '4.0'
     ; Push 4 para a pilha
     ldi r16, 4      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -1181,7 +1213,7 @@ processar_rpn_op7:
 
 processar_rpn_op8:
     ; Processando operação 8 com suporte 16-bit:
-    ; Expressão: 5 MEM
+    ; Expressão: 5.0 MEM
 
     ; Cabeçalho da operação 8
     ldi r16, 13
@@ -1259,6 +1291,8 @@ processar_rpn_op8:
 
     ldi r16, '5'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, 'M'
@@ -1272,7 +1306,7 @@ processar_rpn_op8:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '5'
+    ; Processando token 0: '5.0'
     ; Push 5 para a pilha
     ldi r16, 5      ; Byte baixo
     ldi r17, 0 ; Byte alto
@@ -1437,7 +1471,7 @@ processar_rpn_op9:
 
 processar_rpn_op10:
     ; Processando operação 10 com suporte 16-bit:
-    ; Expressão: 5 RES
+    ; Expressão: 5.0 RES
 
     ; Cabeçalho da operação 10
     ldi r16, 13
@@ -1517,6 +1551,8 @@ processar_rpn_op10:
 
     ldi r16, '5'
     rcall uart_transmit
+    ldi r16, '0'
+    rcall uart_transmit
     ldi r16, ' '
     rcall uart_transmit
     ldi r16, 'R'
@@ -1530,7 +1566,7 @@ processar_rpn_op10:
     ldi r16, 10
     rcall uart_transmit
 
-    ; Processando token 0: '5'
+    ; Processando token 0: '5.0'
     ; Push 5 para a pilha
     ldi r16, 5      ; Byte baixo
     ldi r17, 0 ; Byte alto
