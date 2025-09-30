@@ -10,17 +10,21 @@ def lerArquivo(nomeArquivo: str):
         print(f'ERRO -> Arquivo não encontrado: {nomeArquivo}')
         return []
 
-def salvar_tokens(tokens_por_linha, nome_arquivo="tokens_gerados.txt"):
-    try:
-        raiz = Path(__file__).resolve().parents[2]   # .../LFC---ANALISADOR-LEXICO
-        pasta_destino = raiz / "outputs" / "tokens"
-        pasta_destino.mkdir(parents=True, exist_ok=True)
+from pathlib import Path
 
-        destino = pasta_destino / Path(nome_arquivo).name  # garante só o nome do arquivo
+def salvar_tokens(tokens_por_linha, nome_arquivo: str | Path) -> bool:
+    try:
+        destino = Path(nome_arquivo)
+
+        # Cria a pasta se necessário
+        destino.parent.mkdir(parents=True, exist_ok=True)
+
         with destino.open("w", encoding='utf-8') as f:
             for lista_de_tokens in tokens_por_linha:
                 f.write(" ".join(lista_de_tokens) + "\n")
+
         return True
     except Exception as e:
-        print(f'ERRO -> Falha ao escrever os tokens no arquivo {e}')
+        print(f'ERRO -> Falha ao escrever os tokens no arquivo: {e}')
         return False
+
