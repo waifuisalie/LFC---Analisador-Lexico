@@ -1,6 +1,4 @@
-def save_registers_inc(nome_arquivo="registers.inc"):
-    """Cria o arquivo registers.inc com as definições do ATmega328P - 16-BIT VERSION"""
-    conteudo = """; ATmega328P Register Definitions
+; ATmega328P Register Definitions
 ; Custom header for assembly programming
 ; Updated for RPN Calculator Project - TRUE 16-BIT VERSION
 ; Supports integers from 0 to 65535
@@ -101,12 +99,3 @@ def save_registers_inc(nome_arquivo="registers.inc"):
 .equ FLAG_UNDERFLOW, 1
 .equ FLAG_DIVZERO,   2
 .equ FLAG_INVALID,   3
-"""
-    try:
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            f.write(conteudo)
-        print(f"Arquivo {nome_arquivo} criado com sucesso (16-bit version).")
-        return True
-    except Exception as e:
-        print(f"Erro ao criar {nome_arquivo}: {e}")
-        return False

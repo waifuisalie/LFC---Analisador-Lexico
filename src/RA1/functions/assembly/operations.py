@@ -6,19 +6,23 @@ from typing import List
 # -----------------------------
 
 def is_number(token: str) -> bool:
+    # Ignora operadores e comandos especiais silenciosamente
+    if token in ['+', '-', '*', '/', '%', '^', 'MEM', 'RES']:
+        return False
     try:
         float(token)
         return True
-    except ValueError as e:
-        print(f"Erro ao converter '{token}' para número: {e}")
+    except ValueError:
         return False
 
 def is_integer(token: str) -> bool:
+    # Ignora operadores e comandos especiais silenciosamente
+    if token in ['+', '-', '*', '/', '%', '^', 'MEM', 'RES']:
+        return False
     try:
         val = float(token)
         return val == int(val)
-    except ValueError as e:
-        print(f"Erro ao converter '{token}' para inteiro: {e}")
+    except ValueError:
         return False
 
 def is_variable_mem(token: str) -> bool:

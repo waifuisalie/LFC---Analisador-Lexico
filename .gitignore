@@ -1,3 +1,5 @@
-docs/flowcharts/
-src/functions/__pycache__/
-src/functions/assembly/__pycache__/
+#RA1
+docs/RA1/
+flowcharts/RA1/
+src/RA1/functions/python/__pycache__/
+src/RA1/functions/assembly/__pycache__/
