@@ -15,6 +15,8 @@ class Analisador_Lexico:
             self.caractere = self.texto_fonte[self.ponteiro]
         else:
             self.caractere = None
+        # Debug
+        #print(f'Ponteiro: {self.ponteiro}, Caractere: {self.caractere}')
 
     def ignora_espaco(self):
         while self.caractere is not None and self.caractere.isspace():
@@ -41,24 +43,75 @@ class Analisador_Lexico:
 
     def estado_operador(self):
         token = None
+        caractere_atual = self.caractere  # Armazena o caractere atual
+        
         if self.caractere == '(':
             token = Token(Tipo_de_Token.ABRE_PARENTESES, '(')
+            self.avanca_ponteiro()
         elif self.caractere == ')':
             token = Token(Tipo_de_Token.FECHA_PARENTESES, ')')
+            self.avanca_ponteiro()
         elif self.caractere == '+':
             token = Token(Tipo_de_Token.SOMA, '+')
+            self.avanca_ponteiro()
         elif self.caractere == '-':
             token = Token(Tipo_de_Token.SUBTRACAO, '-')
+            self.avanca_ponteiro()
         elif self.caractere == '*':
             token = Token(Tipo_de_Token.MULTIPLICACAO, '*')
+            self.avanca_ponteiro()
         elif self.caractere == '/':
             token = Token(Tipo_de_Token.DIVISAO, '/')
+            self.avanca_ponteiro()
         elif self.caractere == '%':
             token = Token(Tipo_de_Token.RESTO, '%')
+            self.avanca_ponteiro()
         elif self.caractere == '^':
             token = Token(Tipo_de_Token.POTENCIA, '^')
-        if token:
             self.avanca_ponteiro()
+        elif self.caractere == '<':
+            self.avanca_ponteiro()
+            if self.caractere == '=':
+                token = Token(Tipo_de_Token.MENOR_IGUAL, '<=')
+                self.avanca_ponteiro()
+            else:
+                token = Token(Tipo_de_Token.MENOR, '<')
+        elif self.caractere == '>':
+            self.avanca_ponteiro()
+            if self.caractere == '=':
+                token = Token(Tipo_de_Token.MAIOR_IGUAL, '>=')
+                self.avanca_ponteiro()
+            else:
+                token = Token(Tipo_de_Token.MAIOR, '>')
+        elif self.caractere == '=':
+            self.avanca_ponteiro()
+            if self.caractere == '=':
+                token = Token(Tipo_de_Token.IGUAL, '==')
+                self.avanca_ponteiro()
+            else:
+                raise ValueError("ERRO -> Esperado '=' após '='")
+        elif self.caractere == '!':
+            self.avanca_ponteiro()
+            if self.caractere == '=':
+                token = Token(Tipo_de_Token.DIFERENTE, '!=')
+                self.avanca_ponteiro()
+            else:
+                token = Token(Tipo_de_Token.NOT, '!')
+        elif self.caractere == '|':
+            self.avanca_ponteiro()
+            if self.caractere == '|':
+                token = Token(Tipo_de_Token.OR, '||')
+                self.avanca_ponteiro()
+            else:
+                raise ValueError("ERRO -> Esperado '|' após '|'")
+        elif self.caractere == '&':
+            self.avanca_ponteiro()
+            if self.caractere == '&':
+                token = Token(Tipo_de_Token.AND, '&&')
+                self.avanca_ponteiro()
+            else:
+                raise ValueError("ERRO -> Esperado '&' após '&'")
+        if token:
             return token
         raise ValueError(f"ERRO -> Caractere inválido: '{self.caractere}'")
 
@@ -79,10 +132,21 @@ class Analisador_Lexico:
 
     def estado_comando(self):
         resultado = ""
-        while self.caractere is not None and self.caractere.isalpha():
+        while self.caractere is not None and (self.caractere.isalpha() or self.caractere.isdigit() or self.caractere == '_'):
             resultado += self.caractere
             self.avanca_ponteiro()
-        if resultado == "RES":
-            return Token(Tipo_de_Token.RES, resultado)
-        else: # Variáveis do tipo memória podem ser escritas de diferentes maneiras
-            return Token(Tipo_de_Token.MEM, resultado)
+            
+        # Lista de palavras-chave
+        palavras_chave = {
+            "RES": Tipo_de_Token.RES,
+            "WHILE": Tipo_de_Token.WHILE,
+            "FOR": Tipo_de_Token.FOR,
+            "IFELSE": Tipo_de_Token.IFELSE
+        }
+        
+        # Verifica se é uma palavra-chave
+        if resultado in palavras_chave:
+            return Token(palavras_chave[resultado], resultado)
+        else:
+            # Qualquer sequência não reconhecida é considerada uma variável
+            return Token(Tipo_de_Token.VARIAVEL, resultado)

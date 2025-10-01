@@ -183,7 +183,7 @@ def _gerar_processamento_operacao(codigo: list[str], tokens: list[str], op_numbe
                 valor = valor & 0xFFFF
             codigo.extend(gerar_push_int(valor))
 
-        elif token in ['+', '-', '*', '/', '%', '^']:
+        elif token in ['+', '-', '*', '/', '%', '^', '<', '>', '==', '<=', '>=', '!=', '!', '||', '&&']:
             codigo.extend(gerar_operacao(token))
 
         elif token == 'MEM':
@@ -192,13 +192,17 @@ def _gerar_processamento_operacao(codigo: list[str], tokens: list[str], op_numbe
         elif token == 'RES':
             codigo.extend(["    rcall comando_res", ""])
 
-        elif is_variable_mem(token):
-            var_index = ord(token) - ord('A')
+        elif token in ['WHILE', 'FOR', 'IFELSE']:
             codigo.extend([
-                f"    ldi r17, {var_index}  ; Índice da variável {token}",
-                "    rcall load_var",
+                f"    ; Estrutura de controle: {token}",
+                "    ; (A implementação completa será feita em uma atualização futura)",
                 ""
             ])
+
+        elif is_variable_mem(token):
+            # Todas as sequências de caracteres que não são tokens especiais são tratadas como MEM
+            codigo.extend(["    rcall comando_mem", ""])
+                
         else:
             codigo.extend([f"    ; Token desconhecido: {token}", ""])
 
