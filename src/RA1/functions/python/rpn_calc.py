@@ -230,9 +230,9 @@ def executarCorpoLoop(tokens_corpo: list[Token], memoria: dict) -> float:
     resultado = 0.0
     
     for expressao in expressoes:
-        # Verifica se é uma atribuição de variável e inicializa se necessário
-        if len(expressao) >= 1 and expressao[0].tipo == Tipo_de_Token.VARIAVEL:
-            var_nome = expressao[0].valor
+        # Verifica se é uma atribuição de variável e inicializa se necessário (nova sintaxe: VALOR VARIAVEL)
+        if len(expressao) >= 1 and expressao[-1].tipo == Tipo_de_Token.VARIAVEL:
+            var_nome = expressao[-1].valor
             if var_nome not in memoria:
                 memoria[var_nome] = 0.0
         
@@ -262,13 +262,13 @@ def executarExpressao(tokens: list[Token], memoria: dict) -> float:
     if not tokens_limpos:
         return 0.0
     
-    # Verifica se é uma atribuição de variável simples (VARIAVEL NUMERO)
+    # Verifica se é uma atribuição de variável simples (NUMERO VARIAVEL)
     if (len(tokens_limpos) == 2 and 
-        tokens_limpos[0].tipo == Tipo_de_Token.VARIAVEL and 
-        tokens_limpos[1].tipo == Tipo_de_Token.NUMERO_REAL):
+        tokens_limpos[0].tipo == Tipo_de_Token.NUMERO_REAL and 
+        tokens_limpos[1].tipo == Tipo_de_Token.VARIAVEL):
         
-        var_nome = tokens_limpos[0].valor
-        valor = float(tokens_limpos[1].valor)
+        valor = float(tokens_limpos[0].valor)
+        var_nome = tokens_limpos[1].valor
         memoria[var_nome] = valor
         
         return valor
@@ -278,13 +278,13 @@ def executarExpressao(tokens: list[Token], memoria: dict) -> float:
         if token.tipo in [Tipo_de_Token.IFELSE, Tipo_de_Token.WHILE, Tipo_de_Token.FOR]:
             return processarEstruturaControle(tokens, memoria)
     
-    # Verifica se é uma atribuição com expressão aninhada
+    # Verifica se é uma atribuição com expressão aninhada (EXPRESSAO VARIAVEL)
     if (len(tokens_limpos) >= 2 and 
-        tokens_limpos[0].tipo == Tipo_de_Token.VARIAVEL):
+        tokens_limpos[-1].tipo == Tipo_de_Token.VARIAVEL):
         
-        var_nome = tokens_limpos[0].valor
-        # Processa o resto da expressão
-        resultado = processarTokens(tokens_limpos[1:], memoria)
+        var_nome = tokens_limpos[-1].valor
+        # Processa a expressão (todos os tokens exceto o último que é a variável)
+        resultado = processarTokens(tokens_limpos[:-1], memoria)
         memoria[var_nome] = resultado
                 
         return resultado
