@@ -1,4 +1,4 @@
-# LFC — Analisador Léxico
+# LFC — Analisador Léxico Completo
 
 > **Informação do Grupo**  
 > Linguagens Formais e Compiladores — 9º Período — Engenharia da Computação — PUCPR  
@@ -6,11 +6,15 @@
 
 ## Visão Geral
 
-Este projeto implementa:
+Este projeto implementa um **sistema completo de processamento RPN** com:
 
-- Um analisador léxico baseado em Autômatos Finitos para tokenizar expressões matemáticas em notação polonesa reversa (RPN).
-- Um avaliador de expressões RPN com suporte a operações aritméticas, memória e histórico.
-- Um gerador de código Assembly AVR (ATmega328P / Arduino Uno), produzindo um arquivo `.S` por linha de expressão.
+- **Analisador léxico** baseado em Autômatos Finitos para tokenização completa
+- **Processador RPN avançado** com operações aritméticas, lógicas e de comparação
+- **Estruturas de controle** completas (IFELSE, WHILE, FOR)
+- **Sistema de variáveis** com memória persistente
+- **Comando RES** para acesso ao histórico de resultados
+- **Gerador de código Assembly** AVR (ATmega328P / Arduino Uno)
+- **Suporte completo** a números inteiros e de ponto flutuante
 
 
 > **Fluxo resumido**
@@ -27,115 +31,297 @@ Este projeto implementa:
 ```text
 LFC---Analisador-Lexico/
 ├─ docs/
-│  └─ flowcharts/                 # Diagramas dos fluxogramas em assembly
+│  └─ RA1/
+├─ flowcharts/
+│  └─ RA1/                        # Diagramas dos fluxogramas em assembly
 ├─ inputs/
-│  ├─ int/                        # Arquivos de teste com inteiros
-│  └─ float/                      # Arquivos de teste com reais
+│  └─ RA1/
+│     ├─ int/                     # Arquivos de teste com inteiros
+│     └─ float/                   # Arquivos de teste com reais
 ├─ outputs/
-│  ├─ assembly/                   # Saída: op_1.S, op_2.S, ..., registers.inc
-│  └─ tokens/
-│     └─ tokens_gerados.txt       # Saída: tokens gerados a partir do último input
-└─ src/
-   ├─ functions/
-   │  ├─ __init__.py
-   │  ├─ analisador_lexico.py     
-   │  ├─ gerar_assembly.py       
-   │  ├─ io_utils.py            
-   │  ├─ rpn_calc.py              
-   │  └─ tokens.py                
-  └─ main.py                     
-
+│  └─ RA1/
+│     ├─ assembly/                # Saída: programa_completo.S, registers.inc
+│     └─ tokens/
+│        └─ tokens_gerados.txt    # Saída: tokens gerados a partir do último input
+├─ src/
+│  └─ RA1/
+│     └─ functions/
+│        ├─ assembly/             # Módulos de geração de Assembly
+│        └─ python/
+│           ├─ __init__.py
+│           ├─ analisador_lexico.py     
+│           ├─ io_utils.py            
+│           ├─ rpn_calc.py        # Processador RPN completo
+│           └─ tokens.py                
+├─ AnalisadorLexico.py            # Ponto de entrada principal
+├─ teste1.txt, teste2.txt, teste3.txt  # Arquivos de teste na raiz
+└─ README.md
 ```
 
 
 
-## Como rodar:
+## Como Executar
 
-```powershell
-# Raiz do código (LFC---ANALISADOR-LEXICO)
-python .\src\main.py .\inputs\int\teste1_assembly.txt
+### Sintaxe Básica
+```bash
+# Na raiz do projeto
+python3 AnalisadorLexico.py <arquivo_de_teste>
 ```
+
+### Exemplos de Uso
+```bash
+# Testes básicos
+python3 AnalisadorLexico.py teste1.txt
+python3 AnalisadorLexico.py teste2.txt
+python3 AnalisadorLexico.py teste3.txt
+
+# Testes em subpastas
+python3 AnalisadorLexico.py inputs/RA1/int/teste1_assembly.txt
+python3 AnalisadorLexico.py inputs/RA1/float/teste1.txt
+```
+
+### Sistema de Busca Inteligente
+O sistema procura automaticamente o arquivo em:
+- Diretório atual
+- Raiz do projeto
+- Pasta `inputs/RA1/`
 
   
 
-## Sintaxe e Semântica de RPN Suportadas
+## Funcionalidades Implementadas
+
+### 🔢 **Operações Aritméticas**
+- `+` Soma
+- `-` Subtração  
+- `*` Multiplicação
+- `/` Divisão (com detecção de divisão por zero)
+- `%` Módulo (resto da divisão)
+- `^` Potenciação
+
+### 🔍 **Operadores de Comparação**
+- `<` Menor que
+- `>` Maior que
+- `==` Igual a
+- `<=` Menor ou igual
+- `>=` Maior ou igual
+- `!=` Diferente de
+
+### 🧠 **Operadores Lógicos**
+- `&&` E lógico (AND)
+- `||` Ou lógico (OR)
+- `!` Não lógico (NOT)
+
+### 🔄 **Estruturas de Controle**
+
+#### IFELSE - Estrutura Condicional
 ```
--> Operadores
-
-  - `+` soma
-  - `_` subtração
-  - `*` multiplicação
-  - `/` divisão (com detecção de divisão por zero)
-  - `%` resto da divisão inteira
-  - `^` exponenciação
-
-
-
--> Comandos Especiais
-
-  *MEM*
-      - Se a pilha contiver um número no topo, armazena esse valor em memória interna e retorna-o ao topo.
-      - Se a pilha não contiver número, retorna o último valor armazenado em MEM.
-      - Se MEM ainda não tiver sido inicializado, registra erro e empilha 0.0.
-
-  *RES*
-      - Espera um índice N no topo da pilha e empilha o resultado obtido há N avaliações atrás.
-      - Exemplo: `5 RES` pega o quinto resultado mais recente.
-      - Índices fora do alcance resultam em erro e 0.0.
-
-
-
--> Números
-
-  - Números reais são aceitos no léxico e arredondados para simular precisão de 16 bits (duas casas decimais) na avaliação.
+Sintaxe: (IFELSE (condição) (verdadeiro) (falso))
+Exemplo: (IFELSE (A B >) (1) (0))
 ```
+
+#### WHILE - Loop Condicional
+```
+Sintaxe: (WHILE (condição) (corpo))
+Exemplo: (WHILE (X 5 <) ((X X 1 +)(Y X 2 *)))
+```
+
+#### FOR - Loop com Contador
+```
+Sintaxe: (FOR (inicial) (final) (incremento) (corpo))
+Exemplo: (FOR (1) (10) (2) ((P P 1 +)(Q P 2 *)))
+```
+
+### 💾 **Sistema de Variáveis**
+- **Declaração:** `(VARIAVEL valor)`
+- **Atribuição:** `(VARIAVEL expressão)`
+- **Uso:** Variáveis podem ser referenciadas em qualquer expressão
+- **Escopo:** Global - variáveis persistem entre expressões
+
+### 📊 **Comando RES - Histórico**
+```
+Sintaxe: (N RES) ou (RES) para último resultado
+Exemplos:
+  (1 RES)  # Último resultado
+  (3 RES)  # Terceiro resultado mais recente
+```
+
+### 🔢 **Suporte a Números**
+- **Inteiros:** `1`, `42`, `100`
+- **Decimais:** `3.14`, `2.5`, `0.001`
+- **Precisão:** Arredondamento para 2 casas decimais (simulação 16-bit)
   
 
 ## Arquitetura dos Módulos
 
-  - **functions/tokens.py:** Define os tipos de token (`NUMERO_REAL`, `SOMA`, `SUBTRACAO`, `MULT`, `DIV`, `RESTO`, `POT`, `ABRE_PARENTESES`, `FECHA_PARENTESES`, `RES`, `MEM`, `FIM`) e a classe Token.
-  - **functions/analisador_lexico.py:** Implementa o analisador léxico (DFA): ignora espaços, reconhece números, comandos (MEM, RES) e operadores; lança erro para caracteres inválidos.
-  - **functions/rpn_calc.py:** `parseExpressao(linha)` chama o léxico e filtra parênteses. `executarExpressao(tokens, memoria, historico)` executa a expressão em pilha, trata erros, atualiza memória e histórico.
-  - **functions/io_utils.py:** `lerArquivo(caminho)` lê linhas não vazias. `salvar_tokens(tokens, nome)` sempre salva em `outputs/tokens/<nome>` (criando as pastas).
-  - **functions/gerar_assembly.py:** Gera o código Assembly completo para ATmega328P, incluindo cabeçalho, seção de dados, rotinas de pilha de 16 bits, aritmética e UART. Fornece `save_registers_inc()` e `save_assembly()` para gravar os arquivos.
-  - **src/main.py:** Ponto de entrada. Resolve caminhos de entrada de forma robusta, executa o pipeline, salva tokens e gera `.S` para cada linha.
+### 🏗️ **Módulos Principais**
+
+- **`tokens.py`**: Define todos os tipos de token suportados (números, operadores, estruturas de controle, variáveis, parênteses) e a classe Token
+- **`analisador_lexico.py`**: Implementa o analisador léxico (DFA) que reconhece números, operadores, palavras-chave (WHILE, FOR, IFELSE, RES) e variáveis
+- **`rpn_calc.py`**: Processador RPN completo com:
+  - `parseExpressao()`: Tokenização de expressões
+  - `executarExpressao()`: Executor principal com detecção de estruturas de controle
+  - `processarIFELSE()`, `processarWHILE()`, `processarFOR()`: Processadores específicos
+  - `processarTokens()`: Avaliador RPN tradicional com pilha
+- **`io_utils.py`**: Utilitários de entrada/saída para leitura de arquivos e salvamento de tokens
+- **`assembly/`**: Módulos de geração de código Assembly AVR completo
+
+### 🔄 **Fluxo de Execução**
+
+1. **Tokenização**: Análise léxica converte texto em tokens
+2. **Detecção**: Sistema identifica estruturas de controle vs. expressões simples  
+3. **Processamento**: 
+   - Estruturas de controle → Processadores específicos
+   - Expressões simples → Avaliador RPN tradicional
+4. **Execução**: Avaliação com pilha, memória de variáveis e histórico
+5. **Assembly**: Geração de código ATmega328P para todas as operações
 
   
 
-## Exemplo de Saída no Console
+## Exemplos de Execução
 
-  Arquivo de teste: `inputs\int\teste1_assembly.txt`
-  ```
-  Linha 01: Expressão '(3 2 +)' -> Resultado: 5.0
-  Linha 02: Expressão '(10 4 -)' -> Resultado: 6.0
-  Linha 03: Expressão '(2 3 *)' -> Resultado: 6.0
-  Linha 04: Expressão '(9 2 /)' -> Resultado: 4.5
-  Linha 05: Expressão '(10 3 %)' -> Resultado: 1.0
-  Linha 06: Expressão '(2 3 ^)' -> Resultado: 8.0
-  Linha 07: Expressão '((1 2 +) (3 4 *) /)' -> Resultado: 0.25
-  Linha 08: Expressão '(5 MEM)' -> Resultado: 5.0
-  Linha 09: Expressão '(MEM)' -> Resultado: 5.0
-  Linha 10: Expressão '(5 RES)' -> Resultado: 1.0
+### 🧮 **Teste Básico (teste1.txt)**
+```
+Linha 01: Expressão '(4 2 +)' -> Resultado: 6.0
+Linha 02: Expressão '(6 3 /)' -> Resultado: 2.0
+Linha 03: Expressão '(5 2 ^)' -> Resultado: 25.0
+Linha 04: Expressão '(7 2 %)' -> Resultado: 1.0
+```
 
-  --- FIM DOS TESTES ---
+### 🔄 **Teste com Estruturas de Controle (teste2.txt)**
+```
+Linha 01: Expressão '(A 5)' -> Resultado: 5.0
+Linha 02: Expressão '(B 3)' -> Resultado: 3.0
+Linha 09: Expressão '(IFELSE ((A B >) (C D <=) &&)(1)(0))' -> Resultado: 1.0
+Linha 12: Expressão '(WHILE (X 5 <)((X X 1 +)(Y X 2 *)))' -> Resultado: 10.0
+Linha 17: Expressão '(FOR (1)(10)(2)((P P 1 +)(Q P 2 *)))' -> Resultado: 10.0
+```
 
-  Arquivo outputs/assembly/registers.inc criado com sucesso (16-bit version).
-  Código Assembly salvo em: outputs/assembly/op_1.S (16-bit version)
-  ```
+### 🔢 **Teste com Float (teste3_float.txt)**
+```
+Linha 01: Expressão '(A 5.5)' -> Resultado: 5.5
+Linha 07: Expressão '(G (A 2.5 ^))' -> Resultado: 70.94
+Linha 12: Expressão '(WHILE (X 5.5 <)((X X 1.2 +)(Y X 2.3 *)))' -> Resultado: 14.95
+Linha 25: Expressão '(NEGACAO ((A B ==) !))' -> Resultado: 1.0
+```
+
+### 📤 **Saída Típica**
+```
+--- FIM DOS TESTES ---
+
+Arquivo outputs/RA1/assembly/registers.inc criado com sucesso (16-bit version).
+Código Assembly salvo em: outputs/RA1/assembly/programa_completo.S (16-bit version)
+Contém 22 operações RPN em sequência.
+
+Para testar:
+- Compile e carregue programa_completo.S no Arduino Uno
+- Monitore a saída serial em 9600 baud para ver os resultados!
+```
 
   
+## Sintaxe RPN Detalhada
+
+### 📝 **Regras Gerais**
+- **Notação Pós-fixa**: Operadores vêm após os operandos
+- **Parênteses**: Usados para agrupamento `(expressão)`
+- **Espaços**: Ignorados pelo analisador léxico
+
+### 🔧 **Exemplos de Sintaxe**
+
+#### Operações Aritméticas
+```
+(3 2 +)           # 3 + 2 = 5
+(10 3 -)          # 10 - 3 = 7
+(4 5 *)           # 4 * 5 = 20
+(15 3 /)          # 15 / 3 = 5
+(17 5 %)          # 17 % 5 = 2
+(2 8 ^)           # 2^8 = 256
+```
+
+#### Comparações e Lógica
+```
+(5 3 >)           # 5 > 3 = 1.0 (true)
+(A B ==)          # A == B = 0.0 ou 1.0
+((A B >) (C D <) &&)  # (A>B) AND (C<D)
+((X 0 !=) !)      # NOT(X != 0)
+```
+
+#### Estruturas de Controle
+```
+# IF-ELSE
+(IFELSE (X 0 >) (X) (X -))
+
+# WHILE com múltiplas expressões no corpo
+(WHILE (i 10 <) ((i i 1 +)(soma soma i +)))
+
+# FOR com contador e múltiplas operações
+(FOR (1) (5) (1) ((produto produto i *)(contador contador 1 +)))
+```
+
+#### Variáveis e Histórico
+```
+(resultado (A B +))    # Atribui A+B à variável 'resultado'  
+(ultimo (1 RES))       # último resultado
+(anterior (3 RES))     # terceiro resultado mais recente
+```
+
 ## Compilação e Teste do Assembly
 
-  1. Abra um projeto configurado para AVR-GCC ou PlatformIO com alvo ATmega328P (Arduino Uno).
-  2. Copie de `outputs/assembly/` os arquivos `registers.inc` e algum `op_X.S`.
-  3. Compile e carregue no Arduino Uno.
-  4. Monitore a saída serial configurada em 9600 baud para depuração e resultado.
+### 🔨 **Preparação**
+1. Instale **AVR-GCC** ou use **PlatformIO** com Arduino Uno
+2. Copie os arquivos gerados:
+   - `outputs/RA1/assembly/registers.inc`
+   - `outputs/RA1/assembly/programa_completo.S`
 
-  
+### ⚡ **Compilação**
+```bash
+# Com AVR-GCC
+avr-gcc -mmcu=atmega328p programa_completo.S -o programa.elf
+avr-objcopy -O ihex programa.elf programa.hex
+avrdude -p atmega328p -c arduino -P /dev/ttyUSB0 -b 115200 -U flash:w:programa.hex
+```
+
+### 📊 **Monitoramento**
+- **Baud Rate**: 9600
+- **Saída**: Resultados das operações RPN em sequência
+- **Debug**: Informações de pilha e registradores
+
+## Recursos Avançados
+
+### 🎯 **Detecção Inteligente**
+- **Estruturas vs Expressões**: Sistema detecta automaticamente o tipo de processamento necessário
+- **Aninhamento**: Suporte completo a expressões aninhadas complexas
+- **Validação**: Verificação sintática e semântica em tempo de execução
+
+### 🔄 **Controle de Fluxo**
+- **Loops Seguros**: Limite de 1000 iterações para prevenir loops infinitos
+- **Condições Robustas**: Avaliação correta de expressões booleanas
+- **Múltiplas Expressões**: Corpo de loops pode conter várias operações
+
+### 💾 **Gestão de Memória**
+- **Variáveis Globais**: Escopo compartilhado entre todas as expressões
+- **Histórico Persistente**: Acesso a resultados anteriores via RES
+- **Inicialização Automática**: Variáveis inicializadas com 0.0 se necessário
 
 ## Materiais de Apoio
 
-  - Fluxogramas em `docs/flowcharts/`.
-  - Exemplos de entradas em `inputs/int/` e `inputs/float/`.
-  - Saídas geradas automaticamente em `outputs/`.
+- **Fluxogramas**: `flowcharts/RA1/` - Diagramas de fluxo das operações Assembly
+- **Testes Exemplo**: `inputs/RA1/int/` e `inputs/RA1/float/` - Casos de teste abrangentes  
+- **Saídas**: `outputs/RA1/` - Assembly e tokens gerados automaticamente
+- **Documentação**: Este README com exemplos completos e sintaxe detalhada
+
+---
+
+## 🎉 **Status do Projeto**
+
+✅ **Analisador Léxico** - Completo  
+✅ **Processador RPN** - Completo  
+✅ **Operações Aritméticas** - Completo  
+✅ **Operadores Lógicos** - Completo  
+✅ **Estruturas de Controle** - Completo  
+✅ **Sistema de Variáveis** - Completo  
+✅ **Comando RES** - Completo  
+✅ **Geração Assembly** - Completo  
+✅ **Suporte Float** - Completo  
+
+**Sistema 100% funcional e testado!** 🚀
 

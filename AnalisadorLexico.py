@@ -22,20 +22,27 @@ def exibirResultados(vetor_linhas: list[str]) -> None:
     historico_global = []
     tokens_salvos_txt = []
 
+    # Inicializar o histórico na memória global (removido para evitar duplicação)
+
     for i, linha in enumerate(vetor_linhas, start=1):
         lista_de_tokens = parseExpressao(linha)
         # para salvar tokens completos (incluindo parênteses) para RA2
         tokens_completos = [str(token.valor) for token in lista_de_tokens if token.tipo != Tipo_de_Token.FIM]
         tokens_salvos_txt.append(tokens_completos)
 
-        resultado = executarExpressao(lista_de_tokens, memoria_global, historico_global)
-        if resultado is not None:
-            historico_global.append(resultado)
+        resultado = executarExpressao(lista_de_tokens, memoria_global)
+        # Adiciona apenas uma vez ao histórico
+        if 'historico_resultados' not in memoria_global:
+            memoria_global['historico_resultados'] = []
+        memoria_global['historico_resultados'].append(resultado)
         print(f"Linha {i:02d}: Expressão '{linha}' -> Resultado: {resultado}")
+        # Remove a linha abaixo para evitar duplicação
+        # historico_global.append(resultado)
+        # print(f"DEBUG: Histórico após adicionar {resultado}: {historico_global}")
 
     # Salva em ambos os locais: RA1 e raiz
     salvar_tokens(tokens_salvos_txt, OUT_TOKENS)  # Salva em RA1
-    salvar_tokens(tokens_salvos_txt, BASE_DIR / "tokens_gerados.txt")  # Salva na raiz
+    # salvar_tokens(tokens_salvos_txt, BASE_DIR / "tokens_gerados.txt")  # Salva na raiz
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -87,7 +94,7 @@ if __name__ == "__main__":
 
     # Salvar registers.inc em ambos os locais
     save_registers_inc(str(OUT_ASM_DIR / "registers.inc"))  # Em RA1
-    save_registers_inc(str(BASE_DIR / "registers.inc"))  # Na raiz
+    # save_registers_inc(str(BASE_DIR / "registers.inc"))  # Na raiz
 
     # Preparar lista de todas as operações (filtrar parênteses para assembly)
     all_tokens = []
@@ -105,7 +112,7 @@ if __name__ == "__main__":
     nome_arquivo_root = BASE_DIR / "programa_completo.S"
     
     save_assembly(codigo_assembly, str(nome_arquivo_ra1))  # Salva em RA1
-    save_assembly(codigo_assembly, str(nome_arquivo_root))  # Salva na raiz
+    # save_assembly(codigo_assembly, str(nome_arquivo_root))  # Salva na raiz
     
     print(f"Arquivo {nome_arquivo_ra1.name} gerado com sucesso em:")
     print(f"- {OUT_ASM_DIR}")
